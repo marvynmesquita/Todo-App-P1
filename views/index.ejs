@@ -10,6 +10,20 @@
   <link rel="shortcut icon" href="/favicon.png" type="image/x-icon">
 </head>
 <body>
+  <!-- User Info Bar -->
+  <div class="user-info-bar">
+    <div class="user-info">
+      <i class="fas fa-user-circle"></i>
+      <span>Olá, <%= userName || 'Usuário' %>!</span>
+    </div>
+    <div class="user-actions">
+      <a href="/logout" class="logout-btn" title="Sair">
+        <i class="fas fa-sign-out-alt"></i>
+        Sair
+      </a>
+    </div>
+  </div>
+
   <section class="s-main">
     <div class="container">
       <div class="left">
@@ -25,10 +39,57 @@
             <% }) %>
           </div>
           <div class="days">
-            <!-- Você pode renderizar os dias dinamicamente aqui -->
-            <% if (days) { days.forEach(day => { %>
-              <div><%= day %></div>
-            <% }) } %>
+            <% if (days && days.length > 0) { %>
+              <% days.forEach(day => { %>
+                <div class="day <%= day.isCurrentMonth ? '' : 'prev-date' %> <%= day.isToday ? 'today' : '' %> <%= day.isHoliday ? 'holiday' : '' %>" 
+                     data-date="<%= day.date %>"
+                     data-holiday="<%= day.isHoliday ? 'true' : 'false' %>"
+                     data-holiday-name="<%= day.holidayName || '' %>"
+                     data-holiday-type="<%= day.holidayType || '' %>"
+                     title="<%= day.isHoliday ? day.holidayName : '' %>"
+                     onclick="selectDay(this)">
+                  <span class="day-number"><%= day.number %></span>
+                  <% if (day.isHoliday) { %>
+                    <div class="holiday-indicator" title="<%= day.holidayName %>">
+                      <i class="fas fa-star"></i>
+                    </div>
+                  <% } %>
+                </div>
+              <% }) %>
+            <% } else { %>
+              <!-- Fallback se não houver dias -->
+              <div class="day">1</div>
+              <div class="day">2</div>
+              <div class="day">3</div>
+              <div class="day">4</div>
+              <div class="day">5</div>
+              <div class="day">6</div>
+              <div class="day">7</div>
+              <div class="day">8</div>
+              <div class="day">9</div>
+              <div class="day">10</div>
+              <div class="day">11</div>
+              <div class="day">12</div>
+              <div class="day">13</div>
+              <div class="day">14</div>
+              <div class="day">15</div>
+              <div class="day">16</div>
+              <div class="day">17</div>
+              <div class="day">18</div>
+              <div class="day">19</div>
+              <div class="day">20</div>
+              <div class="day">21</div>
+              <div class="day">22</div>
+              <div class="day">23</div>
+              <div class="day">24</div>
+              <div class="day">25</div>
+              <div class="day">26</div>
+              <div class="day">27</div>
+              <div class="day">28</div>
+              <div class="day">29</div>
+              <div class="day">30</div>
+              <div class="day">31</div>
+            <% } %>
           </div>
           <div class="goto-today">
             <div class="goto">
@@ -45,17 +106,224 @@
           <div class="event-date"><%= eventDate || '' %></div>
         </div>
         <div class="events">
-          <ul class="event-list">
-            <% if (events && events.length) { events.forEach(event => { %>
-              <li><%= event %></li>
-            <% }) } else { %>
-              <li>Nenhuma tarefa</li>
-            <% } %>
-          </ul>
+          <!-- Feriados do Dia Selecionado -->
+          <div class="holidays-section">
+            <h3 class="holidays-title">
+              <i class="fas fa-calendar-star"></i>
+              <span id="holidays-title-text">Feriados do Dia</span>
+            </h3>
+            <div class="selected-day-info">
+              <div class="selected-date" id="selected-date">
+                <i class="fas fa-calendar-day"></i>
+                <span>Selecione um dia</span>
+              </div>
+            </div>
+            <div class="holidays-list" id="holidays-list">
+              <div class="no-holidays">
+                <i class="fas fa-hand-pointer"></i>
+                <p>Clique em um dia do calendário para ver os feriados</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Lista de Tarefas -->
+          <div class="tasks-section">
+            <h3 class="tasks-title">
+              <i class="fas fa-tasks"></i>
+              Suas Tarefas
+            </h3>
+            <ul class="event-list">
+              <% if (events && events.length) { events.forEach(event => { %>
+                <li><%= event %></li>
+              <% }) } else { %>
+                <li class="no-tasks">
+                  <i class="fas fa-plus-circle"></i>
+                  <span>Nenhuma tarefa</span>
+                </li>
+              <% } %>
+            </ul>
+          </div>
         </div>
       </div>
     </div>
   </section>
+  
+  <!-- JavaScript para seleção de dias e feriados -->
+  <script>
+    let selectedDay = null;
+    let allHolidays = <%- JSON.stringify(holidays || []) %>;
+    let currentYear = new Date().getFullYear();
+
+    function selectDay(dayElement) {
+      // Remover seleção anterior
+      if (selectedDay) {
+        selectedDay.classList.remove('selected');
+      }
+      
+      // Adicionar seleção ao dia clicado
+      dayElement.classList.add('selected');
+      selectedDay = dayElement;
+      
+      // Obter dados do dia
+      const date = dayElement.getAttribute('data-date');
+      const isHoliday = dayElement.getAttribute('data-holiday') === 'true';
+      const holidayName = dayElement.getAttribute('data-holiday-name');
+      const holidayType = dayElement.getAttribute('data-holiday-type');
+      
+      // Verificar se precisa buscar feriados de outro ano
+      const dayYear = new Date(date).getFullYear();
+      if (dayYear !== currentYear) {
+        loadHolidaysForYear(dayYear, date, isHoliday, holidayName, holidayType);
+      } else {
+        // Atualizar informações do dia selecionado
+        updateSelectedDayInfo(date, isHoliday, holidayName, holidayType);
+        
+        // Atualizar lista de feriados
+        updateHolidaysList(date, isHoliday, holidayName, holidayType);
+      }
+    }
+
+    async function loadHolidaysForYear(year, date, isHoliday, holidayName, holidayType) {
+      try {
+        console.log(`Buscando feriados do ano ${year}`);
+        const response = await fetch(`/holidays/${year}`);
+        if (response.ok) {
+          const holidays = await response.json();
+          allHolidays = holidays;
+          currentYear = year;
+          
+          // Atualizar todos os dias do calendário com os novos feriados
+          updateCalendarWithHolidays(holidays);
+          
+          // Atualizar informações do dia selecionado
+          updateSelectedDayInfo(date, isHoliday, holidayName, holidayType);
+          updateHolidaysList(date, isHoliday, holidayName, holidayType);
+        } else {
+          console.error('Erro ao buscar feriados do ano', year);
+          updateSelectedDayInfo(date, isHoliday, holidayName, holidayType);
+          updateHolidaysList(date, isHoliday, holidayName, holidayType);
+        }
+      } catch (error) {
+        console.error('Erro ao buscar feriados:', error);
+        updateSelectedDayInfo(date, isHoliday, holidayName, holidayType);
+        updateHolidaysList(date, isHoliday, holidayName, holidayType);
+      }
+    }
+
+    function updateCalendarWithHolidays(holidays) {
+      // Atualizar todos os dias do calendário com os feriados do ano correto
+      const dayElements = document.querySelectorAll('.day');
+      dayElements.forEach(dayElement => {
+        const date = dayElement.getAttribute('data-date');
+        const holiday = holidays.find(h => h.date === date);
+        
+        if (holiday) {
+          dayElement.classList.add('holiday');
+          dayElement.setAttribute('data-holiday', 'true');
+          dayElement.setAttribute('data-holiday-name', holiday.name);
+          dayElement.setAttribute('data-holiday-type', holiday.type);
+          dayElement.title = holiday.name;
+          
+          // Adicionar indicador visual se não existir
+          if (!dayElement.querySelector('.holiday-indicator')) {
+            const indicator = document.createElement('div');
+            indicator.className = 'holiday-indicator';
+            indicator.title = holiday.name;
+            indicator.innerHTML = '<i class="fas fa-star"></i>';
+            dayElement.appendChild(indicator);
+          }
+        } else {
+          dayElement.classList.remove('holiday');
+          dayElement.setAttribute('data-holiday', 'false');
+          dayElement.setAttribute('data-holiday-name', '');
+          dayElement.setAttribute('data-holiday-type', '');
+          dayElement.title = '';
+          
+          // Remover indicador visual
+          const indicator = dayElement.querySelector('.holiday-indicator');
+          if (indicator) {
+            indicator.remove();
+          }
+        }
+      });
+    }
+
+    function updateSelectedDayInfo(date, isHoliday, holidayName, holidayType) {
+      const selectedDateElement = document.getElementById('selected-date');
+      const dateObj = new Date(date);
+      
+      const formattedDate = dateObj.toLocaleDateString('pt-BR', {
+        weekday: 'long',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+      });
+      
+      selectedDateElement.innerHTML = `
+        <i class="fas fa-calendar-day"></i>
+        <span>${formattedDate}</span>
+        ${isHoliday ? `<div class="holiday-badge">${holidayName}</div>` : ''}
+      `;
+    }
+
+    function updateHolidaysList(date, isHoliday, holidayName, holidayType) {
+      const holidaysListElement = document.getElementById('holidays-list');
+      const titleElement = document.getElementById('holidays-title-text');
+      
+      if (isHoliday) {
+        titleElement.textContent = 'Feriados do Dia';
+        holidaysListElement.innerHTML = `
+          <div class="holiday-item">
+            <div class="holiday-date">
+              ${new Date(date).getDate()}
+            </div>
+            <div class="holiday-info">
+              <div class="holiday-name">${holidayName}</div>
+              <div class="holiday-type ${holidayType}">
+                <i class="fas fa-${getHolidayIcon(holidayType)}"></i>
+                ${getHolidayTypeLabel(holidayType)}
+              </div>
+            </div>
+          </div>
+        `;
+      } else {
+        titleElement.textContent = 'Feriados do Dia';
+        holidaysListElement.innerHTML = `
+          <div class="no-holidays">
+            <i class="fas fa-calendar-times"></i>
+            <p>Nenhum feriado neste dia</p>
+          </div>
+        `;
+      }
+    }
+
+    function getHolidayIcon(type) {
+      switch(type) {
+        case 'nacional': return 'flag';
+        case 'estadual': return 'map-marker-alt';
+        case 'municipal': return 'building';
+        default: return 'star';
+      }
+    }
+
+    function getHolidayTypeLabel(type) {
+      switch(type) {
+        case 'nacional': return 'Nacional';
+        case 'estadual': return 'Estadual';
+        case 'municipal': return 'Municipal';
+        default: return 'Feriado';
+      }
+    }
+
+    // Selecionar o dia atual por padrão
+    document.addEventListener('DOMContentLoaded', function() {
+      const todayElement = document.querySelector('.day.today');
+      if (todayElement) {
+        selectDay(todayElement);
+      }
+    });
+  </script>
+  
   <script src="/js/scripts.js"></script>
 </body>
 </html> 

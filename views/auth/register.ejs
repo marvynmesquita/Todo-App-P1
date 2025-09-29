@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title><%= title || 'Registro - Todo App' %></title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.2.1/css/all.min.css" integrity="sha512-MV7K8+y+gLIBoVD59lQIYicR65iaqukzvf/nwasF0nqhPay5w/9lJmVM2hMDcnK1OnMGCdVK+iQrJ7lzPJQd1w==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="stylesheet" href="/css/auth.css">
+  <link rel="shortcut icon" href="/favicon.png" type="image/x-icon">
+</head>
+<body>
+  <div class="auth-container">
+    <div class="auth-card">
+      <div class="auth-header">
+        <div class="auth-logo">
+          <i class="fas fa-calendar-check"></i>
+          <h1>Todo App</h1>
+        </div>
+        <p class="auth-subtitle">Crie sua conta e comece a organizar sua vida</p>
+      </div>
+
+      <!-- Flash Messages -->
+      <% if (error && error.length > 0) { %>
+        <div class="alert alert-error">
+          <i class="fas fa-exclamation-circle"></i>
+          <%= error %>
+        </div>
+      <% } %>
+      
+      <% if (success && success.length > 0) { %>
+        <div class="alert alert-success">
+          <i class="fas fa-check-circle"></i>
+          <%= success %>
+        </div>
+      <% } %>
+
+      <form class="auth-form" method="POST" action="/register">
+        <div class="form-group">
+          <label for="name" class="form-label">
+            <i class="fas fa-user"></i>
+            Nome completo
+          </label>
+          <input 
+            type="text" 
+            id="name" 
+            name="name" 
+            class="form-input" 
+            placeholder="Seu nome completo"
+            required
+            autocomplete="name"
+          >
+        </div>
+
+        <div class="form-group">
+          <label for="email" class="form-label">
+            <i class="fas fa-envelope"></i>
+            Email
+          </label>
+          <input 
+            type="email" 
+            id="email" 
+            name="email" 
+            class="form-input" 
+            placeholder="seu@email.com"
+            required
+            autocomplete="email"
+          >
+        </div>
+
+        <div class="form-group">
+          <label for="password" class="form-label">
+            <i class="fas fa-lock"></i>
+            Senha
+          </label>
+          <div class="password-input">
+            <input 
+              type="password" 
+              id="password" 
+              name="password" 
+              class="form-input" 
+              placeholder="Mínimo 6 caracteres"
+              required
+              autocomplete="new-password"
+              minlength="6"
+            >
+            <button type="button" class="password-toggle" onclick="togglePassword('password')">
+              <i class="fas fa-eye" id="password-icon"></i>
+            </button>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="confirmPassword" class="form-label">
+            <i class="fas fa-lock"></i>
+            Confirmar senha
+          </label>
+          <div class="password-input">
+            <input 
+              type="password" 
+              id="confirmPassword" 
+              name="confirmPassword" 
+              class="form-input" 
+              placeholder="Digite a senha novamente"
+              required
+              autocomplete="new-password"
+              minlength="6"
+            >
+            <button type="button" class="password-toggle" onclick="togglePassword('confirmPassword')">
+              <i class="fas fa-eye" id="confirmPassword-icon"></i>
+            </button>
+          </div>
+        </div>
+
+        <div class="form-options">
+          <label class="checkbox-label">
+            <input type="checkbox" name="terms" class="checkbox-input" required>
+            <span class="checkbox-custom"></span>
+            Aceito os <a href="#" class="terms-link">termos de uso</a> e <a href="#" class="terms-link">política de privacidade</a>
+          </label>
+        </div>
+
+        <button type="submit" class="btn btn-primary btn-full">
+          <i class="fas fa-user-plus"></i>
+          Criar conta
+        </button>
+      </form>
+
+      <div class="auth-footer">
+        <p>Já tem uma conta? <a href="/login" class="auth-link">Fazer login</a></p>
+      </div>
+    </div>
+
+    <div class="auth-decoration">
+      <div class="decoration-content">
+        <i class="fas fa-rocket"></i>
+        <h2>Comece hoje mesmo</h2>
+        <p>Junte-se a milhares de pessoas que já organizam suas vidas com nosso app</p>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function togglePassword(inputId) {
+      const passwordInput = document.getElementById(inputId);
+      const passwordIcon = document.getElementById(inputId + '-icon');
+      
+      if (passwordInput.type === 'password') {
+        passwordInput.type = 'text';
+        passwordIcon.classList.remove('fa-eye');
+        passwordIcon.classList.add('fa-eye-slash');
+      } else {
+        passwordInput.type = 'password';
+        passwordIcon.classList.remove('fa-eye-slash');
+        passwordIcon.classList.add('fa-eye');
+      }
+    }
+
+    // Password confirmation validation
+    document.getElementById('confirmPassword').addEventListener('input', function() {
+      const password = document.getElementById('password').value;
+      const confirmPassword = this.value;
+      
+      if (password !== confirmPassword) {
+        this.setCustomValidity('As senhas não coincidem');
+      } else {
+        this.setCustomValidity('');
+      }
+    });
+
+    // Auto-hide alerts after 5 seconds
+    setTimeout(() => {
+      const alerts = document.querySelectorAll('.alert');
+      alerts.forEach(alert => {
+        alert.style.opacity = '0';
+        setTimeout(() => alert.remove(), 300);
+      });
+    }, 5000);
+  </script>
+</body>
+</html>
+

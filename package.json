@@ -19,9 +19,13 @@
   },
   "homepage": "https://github.com/marvynmesquita/Todo-App-P1#readme",
   "dependencies": {
+    "axios": "^1.12.2",
+    "bcryptjs": "^3.0.2",
+    "connect-flash": "^0.1.1",
     "cors": "^2.8.5",
     "dotenv": "^17.2.2",
     "ejs": "^3.1.10",
-    "express": "^5.1.0"
+    "express": "^5.1.0",
+    "express-session": "^1.18.2"
   }
 }

@@ -85,13 +85,73 @@ body {
 }
 
 /* ===========================================
+   USER INFO BAR
+   =========================================== */
+.user-info-bar {
+  background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
+  color: var(--text-darker);
+  padding: 1rem 2rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  box-shadow: var(--shadow);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.user-info {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  font-size: 1.4rem;
+  font-weight: 600;
+}
+
+.user-info i {
+  font-size: 2rem;
+  color: var(--text-darker);
+}
+
+.user-actions {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.logout-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.8rem 1.5rem;
+  background: rgba(255, 255, 255, 0.2);
+  color: var(--text-darker);
+  text-decoration: none;
+  border-radius: var(--border-radius);
+  font-size: 1.3rem;
+  font-weight: 500;
+  transition: var(--transition);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.logout-btn:hover {
+  background: rgba(255, 255, 255, 0.3);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow);
+}
+
+.logout-btn i {
+  font-size: 1.4rem;
+}
+
+/* ===========================================
    MAIN LAYOUT
    =========================================== */
 .s-main {
   display: flex;
   align-items: center;
   justify-content: center;
-  min-height: 100vh;
+  min-height: calc(100vh - 80px);
   padding: 2rem;
 }
 
@@ -270,6 +330,106 @@ body {
   font-weight: 700;
   background: linear-gradient(145deg, var(--secondary-color) 0%, #26a69a 100%) !important;
   color: white;
+}
+
+/* Feriados */
+.s-main .container .left .calendar .days .holiday {
+  background: linear-gradient(145deg, #ff6b6b 0%, #ee5a52 100%) !important;
+  color: white;
+  font-weight: 700;
+  position: relative;
+  box-shadow: 0 2px 8px rgba(255, 107, 107, 0.3);
+}
+
+.s-main .container .left .calendar .days .holiday:hover {
+  background: linear-gradient(145deg, #ff5252 0%, #e53935 100%) !important;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(255, 107, 107, 0.4);
+}
+
+.s-main .container .left .calendar .days .holiday .holiday-indicator {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  font-size: 0.8rem;
+  color: #ffd700;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+}
+
+.s-main .container .left .calendar .days .holiday.today {
+  background: linear-gradient(145deg, #ff8a65 0%, #ff7043 100%) !important;
+  box-shadow: 0 4px 12px rgba(255, 138, 101, 0.4);
+}
+
+.s-main .container .left .calendar .days .holiday.today .holiday-indicator {
+  color: #fff;
+  font-size: 1rem;
+}
+
+/* Seleção de dias */
+.s-main .container .left .calendar .days .day.selected {
+  background: linear-gradient(145deg, var(--primary-color) 0%, var(--primary-dark) 100%) !important;
+  color: var(--text-darker);
+  font-weight: 700;
+  box-shadow: 0 0 0 3px rgba(255, 195, 0, 0.5);
+  transform: scale(1.05);
+  z-index: 10;
+  position: relative;
+}
+
+.s-main .container .left .calendar .days .day.selected.holiday {
+  background: linear-gradient(145deg, #ff8a65 0%, #ff7043 100%) !important;
+  color: white;
+  box-shadow: 0 0 0 3px rgba(255, 138, 101, 0.6);
+}
+
+.s-main .container .left .calendar .days .day.selected .holiday-indicator {
+  color: #fff;
+  font-size: 1.2rem;
+  animation: pulse 1.5s infinite;
+}
+
+/* Indicadores de feriados melhorados */
+.s-main .container .left .calendar .days .holiday::before {
+  content: "";
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  width: 8px;
+  height: 8px;
+  background: #ffd700;
+  border-radius: 50%;
+  box-shadow: 0 0 4px rgba(255, 215, 0, 0.6);
+  animation: twinkle 2s infinite;
+}
+
+.s-main .container .left .calendar .days .holiday .holiday-indicator {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  font-size: 0.8rem;
+  color: #ffd700;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+  z-index: 2;
+}
+
+/* Animação para indicadores */
+@keyframes twinkle {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.7; transform: scale(1.2); }
+}
+
+/* Hover melhorado para dias com feriados */
+.s-main .container .left .calendar .days .holiday:hover::before {
+  animation: none;
+  background: #fff;
+  transform: scale(1.3);
+}
+
+.s-main .container .left .calendar .days .holiday:hover .holiday-indicator {
+  color: #fff;
+  font-size: 1rem;
+  transform: scale(1.2);
 }
 
 /* Event Indicators */
@@ -646,6 +806,222 @@ body {
   border-color: rgba(255, 255, 255, 0.8);
   color: rgba(255, 255, 255, 0.9);
   transform: scale(1.1);
+}
+
+/* ===========================================
+   FERIADOS SECTION
+   =========================================== */
+.holidays-section {
+  margin-bottom: 2rem;
+}
+
+.selected-day-info {
+  margin-bottom: 1.5rem;
+}
+
+.selected-date {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1.2rem;
+  background: rgba(255, 255, 255, 0.9);
+  border-radius: var(--border-radius);
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(10px);
+  transition: var(--transition);
+}
+
+.selected-date i {
+  font-size: 1.8rem;
+  color: var(--primary-color);
+}
+
+.selected-date span {
+  font-size: 1.4rem;
+  font-weight: 600;
+  color: var(--text-darker);
+  flex: 1;
+}
+
+.holiday-badge {
+  background: linear-gradient(135deg, #ff6b6b 0%, #ee5a52 100%);
+  color: white;
+  padding: 0.4rem 0.8rem;
+  border-radius: 1rem;
+  font-size: 1.1rem;
+  font-weight: 600;
+  box-shadow: 0 2px 8px rgba(255, 107, 107, 0.3);
+  animation: pulse 2s infinite;
+}
+
+.holidays-title {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  font-size: 1.8rem;
+  font-weight: 700;
+  color: var(--text-darker);
+  margin-bottom: 1.5rem;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+.holidays-title i {
+  color: #ff6b6b;
+  font-size: 2rem;
+}
+
+.holidays-list {
+  max-height: 200px;
+  overflow-y: auto;
+  padding-right: 0.5rem;
+}
+
+.holiday-item {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem;
+  background: rgba(255, 255, 255, 0.9);
+  border-radius: var(--border-radius);
+  margin-bottom: 0.8rem;
+  transition: var(--transition);
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(10px);
+}
+
+.holiday-item:hover {
+  background: rgba(255, 255, 255, 1);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-lg);
+}
+
+.holiday-date {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 3rem;
+  height: 3rem;
+  background: linear-gradient(135deg, #ff6b6b 0%, #ee5a52 100%);
+  color: white;
+  border-radius: 50%;
+  font-weight: 700;
+  font-size: 1.4rem;
+  flex-shrink: 0;
+  box-shadow: 0 2px 8px rgba(255, 107, 107, 0.3);
+}
+
+.holiday-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.holiday-name {
+  font-size: 1.4rem;
+  font-weight: 600;
+  color: var(--text-darker);
+  margin-bottom: 0.3rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.holiday-type {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 1.1rem;
+  font-weight: 500;
+  padding: 0.2rem 0.8rem;
+  border-radius: 1rem;
+  width: fit-content;
+}
+
+.holiday-type.nacional {
+  background: linear-gradient(135deg, #4caf50 0%, #45a049 100%);
+  color: white;
+}
+
+.holiday-type.estadual {
+  background: linear-gradient(135deg, #2196f3 0%, #1976d2 100%);
+  color: white;
+}
+
+.holiday-type.municipal {
+  background: linear-gradient(135deg, #ff9800 0%, #f57c00 100%);
+  color: white;
+}
+
+.holiday-type i {
+  font-size: 1rem;
+}
+
+.no-holidays {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+  color: var(--text-muted);
+  text-align: center;
+}
+
+.no-holidays i {
+  font-size: 3rem;
+  margin-bottom: 1rem;
+  opacity: 0.5;
+}
+
+.no-holidays p {
+  font-size: 1.4rem;
+  margin: 0;
+}
+
+/* ===========================================
+   TASKS SECTION
+   =========================================== */
+.tasks-section {
+  margin-top: 2rem;
+}
+
+.tasks-title {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  font-size: 1.8rem;
+  font-weight: 700;
+  color: var(--text-darker);
+  margin-bottom: 1.5rem;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+.tasks-title i {
+  color: var(--primary-color);
+  font-size: 2rem;
+}
+
+.no-tasks {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1.5rem;
+  background: rgba(255, 255, 255, 0.1);
+  border: 2px dashed rgba(255, 255, 255, 0.3);
+  border-radius: var(--border-radius);
+  color: rgba(255, 255, 255, 0.7);
+  text-align: center;
+  font-size: 1.4rem;
+  transition: var(--transition);
+}
+
+.no-tasks:hover {
+  background: rgba(255, 255, 255, 0.2);
+  border-color: rgba(255, 255, 255, 0.5);
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.no-tasks i {
+  font-size: 2rem;
+  color: var(--primary-color);
 }/* ===========================================
    RESPONSIVE DESIGN
    =========================================== */

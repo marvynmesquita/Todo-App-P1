@@ -4,9 +4,14 @@ const url = require('url');
 const querystring = require('querystring');
 const path = require('path');
 
+//Configurar variáveis de ambiente
+require('dotenv').config();
+
 //Modulos externos
 const express = require('express');
 const cors = require('cors');
+const session = require('express-session');
+const flash = require('connect-flash');
 
 //Configurações do servidor
 const app = express();
@@ -19,6 +24,21 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static('public'));
 
+//Configuração de sessão
+app.use(session({
+  secret: process.env.SESSION_SECRET || 'todo-app-secret-key-2024',
+  resave: false,
+  saveUninitialized: false,
+  cookie: {
+    secure: NODE_ENV === 'production',
+    httpOnly: true,
+    maxAge: 24 * 60 * 60 * 1000 // 24 horas
+  }
+}));
+
+//Flash messages
+app.use(flash());
+
 //Configuração do motor de visualização
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
@@ -29,9 +49,13 @@ app.use(express.static(path.join(__dirname, 'public'), {
     etag: true
 }));
 
-//Rotas
+//Rotas de autenticação
+const { router: authRouter, requireAuth } = require('./auth');
+app.use('/', authRouter);
+
+//Rotas principais (protegidas)
 const router = require('./routes');
-app.use('/', router);
+app.use('/', requireAuth, router);
 
 //Iniciar o servidor
 app.listen(PORT, () => {
