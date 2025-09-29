@@ -15,42 +15,16 @@ let today = new Date();
 let activeDay;
 let month = today.getMonth();
 let year = today.getFullYear();
+let fetchedHolidays = {}; // Cache para feriados por ano
 
 const months = [
-    'Janeiro',
-    'Fevereiro',
-    'Março',
-    'Abril',
-    'Maio',
-    'Junho',
-    'Julho',
-    'Agosto',
-    'Setembro',
-    'Outubro',
-    'Novembro',
-    'Dezembro'
+    'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
+    'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'
 ];
-
-const daysList =[
-    'Domingo',
-    'Segunda',
-    'Terça',
-    'Quarta',
-    'Quinta',
-    'Sexta',
-    'Sábado'
-]
 
 const daysFullname = [
-    'Domingo',
-    'Segunda',
-    'Terça',
-    'Quarta',
-    'Quinta',
-    'Sexta',
-    'Sábado'
+    'Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'
 ];
-
 
 var eventsArray = [
     {
@@ -85,10 +59,30 @@ var eventsArray = [
                 time: '00:00',
             },
         ],
-    },  
-]
+    },
+];
 
-function initCalendar() {
+async function fetchHolidays(yearToFetch) {
+    if (fetchedHolidays[yearToFetch]) {
+        return fetchedHolidays[yearToFetch];
+    }
+    try {
+        const response = await fetch(`/holidays/${yearToFetch}`);
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        const holidays = await response.json();
+        fetchedHolidays[yearToFetch] = holidays;
+        return holidays;
+    } catch (error) {
+        console.error("Erro ao buscar feriados:", error);
+        return [];
+    }
+}
+
+async function initCalendar() {
+    const holidays = await fetchHolidays(year);
+
     const firstDay = new Date(year, month, 1);
     const lastDay = new Date(year, month + 1, 0);
     const prevLastDay = new Date(year, month, 0);
@@ -97,120 +91,69 @@ function initCalendar() {
     const day = firstDay.getDay();
     const nextDays = 7 - lastDay.getDay();
 
-    date.innerHTML = months[month] + ' '+ year;
+    date.innerHTML = `${months[month]} ${year}`;
+    let daysHtml = "";
 
-
-    let days = "";
-
+    // Dias do mês anterior
     for (let x = day; x > 0; x--) {
-        let event = false;
-
-        eventsArray.forEach((eventObj) => {
-            if (eventObj.day === x &&
-            eventObj.month - 1 === month &&
-            eventObj.year === year){
-                event = true;
-            }
-        })
-        if(event){
-            days += `<div class="day prev-date event">${prevDays -x + 1}</div>`;
-        } else {
-            days += `<div class="day prev-date">${prevDays -x + 1}</div>`;
-        }
+        const dayNumber = prevDays - x + 1;
+        const event = eventsArray.find(e => e.day === dayNumber && e.month - 1 === month - 1 && e.year === year);
+        daysHtml += `<div class="day prev-date ${event ? 'event' : ''}">${dayNumber}</div>`;
     }
 
+    // Dias do mês atual
     for (let i = 1; i <= lastDate; i++) {
+        const currentDate = new Date(year, month, i);
+        const dateString = currentDate.toISOString().split('T')[0];
+        const isToday = currentDate.toDateString() === new Date().toDateString();
+        const isHoliday = holidays.find(h => h.date === dateString);
+        const event = eventsArray.find(e => e.day === i && e.month - 1 === month && e.year === year);
 
-        let event = false;
+        let classList = "day";
+        if (isToday) classList += " today";
+        if (event) classList += " event";
+        if (isHoliday) classList += " holiday";
+        
+        const holidayName = isHoliday ? isHoliday.name : '';
+        const holidayType = isHoliday ? isHoliday.type : '';
+        const title = isHoliday ? holidayName : '';
 
-        eventsArray.forEach((eventObj) => {
-            if (eventObj.day === i &&
-            eventObj.month - 1 === month &&
-            eventObj.year === year){
-                event = true;
-            }
-        })
-
-        if (i === new Date().getDate() &&
-        year === new Date().getFullYear() &&
-        month === new Date().getMonth()){
-            if(activeDay === undefined){
-                activeDay = i;
-                if (event) {
-                    days += `<div class="day today active event">${i}</div>`;
-                }
-                else {
-                    days += `<div class="day active today">${i}</div>`;
-                }
-            }
-            else{
-                if (event) {
-                    days += `<div class="day today event">${i}</div>`;
-                }
-                else {
-                    days += `<div class="day today">${i}</div>`;
-                }
-            }
-        } else {
-            if (event) {
-                days += `<div class="day event">${i}</div>`;
-            }
-            else {
-                days += `<div class="day">${i}</div>`;
-            }
-        }
+        daysHtml += `<div class="${classList}"
+                         data-date="${dateString}"
+                         data-holiday="${!!isHoliday}"
+                         data-holiday-name="${holidayName}"
+                         data-holiday-type="${holidayType}"
+                         title="${title}">${i}</div>`;
     }
 
+    // Dias do próximo mês
     for (let j = 1; j < nextDays; j++) {
-        let event = false;
-
-        eventsArray.forEach((eventObj) => {
-            if (eventObj.day === j &&
-            eventObj.month - 1 === month &&
-            eventObj.year === year){
-                event = true;
-            }
-        })
-        if(event){
-            days += `<div class="day next-date event">${j}</div>`;
-        }
-        else {
-            days += `<div class="day next-date">${j}</div>`;
-        }
+        const event = eventsArray.find(e => e.day === j && e.month - 1 === month + 1 && e.year === year);
+        daysHtml += `<div class="day next-date ${event ? 'event' : ''}">${j}</div>`;
     }
 
-    daysContainer.innerHTML = days;
+    daysContainer.innerHTML = daysHtml;
     addListener();
 }
 
-initCalendar();
-getActiveDay(today.getDate());
-updateEvents(today.getDate());
-
-function prevMonth(){
-    if (month === 0){
+function prevMonth() {
+    if (month === 0) {
         month = 11;
         year--;
     } else {
         month--;
     }
     initCalendar();
-    activeDay = 1;
-    updateEvents(activeDay);
-    getActiveDay(activeDay);
 }
 
-function nextMonth(){
-    if (month === 11){
+function nextMonth() {
+    if (month === 11) {
         month = 0;
         year++;
     } else {
         month++;
     }
     initCalendar();
-    activeDay = 1;
-    updateEvents(activeDay);
-    getActiveDay(activeDay);
 }
 
 prev.addEventListener('click', prevMonth);
@@ -222,6 +165,7 @@ todayBtn.addEventListener('click', () => {
     year = today.getFullYear();
     activeDay = undefined;
     initCalendar();
+    getActiveDay(today.getDate());
     updateEvents(today.getDate());
 });
 
@@ -243,10 +187,10 @@ dateInput.addEventListener('input', (e) => {
 gotoBtn.addEventListener("click", gotoDate);
 
 function gotoDate() {
-    const dateArray =  dateInput.value.split('/');
+    const dateArray = dateInput.value.split('/');
     if (dateArray.length === 2) {
-        if (dateArray[0] > 0 && dateArray[0] < 13 && dateArray[1].length === 4){
-            month = dateArray[0]-1;
+        if (dateArray[0] > 0 && dateArray[0] < 13 && dateArray[1].length === 4) {
+            month = dateArray[0] - 1;
             year = dateArray[1];
             initCalendar();
             return;
@@ -255,7 +199,7 @@ function gotoDate() {
     alert("Data inválida");
 }
 
-function eventCreator () {
+function eventCreator() {
     const eventWrapper = document.createElement("div");
     eventWrapper.classList.add("create-event");
     const eventName = document.createElement("input");
@@ -280,15 +224,15 @@ function eventCreator () {
     const addBtn = document.querySelector('.add-event');
     addBtn.remove();
     const eventLi = document.createElement('li');
-    eventLi.appendChild(eventWrapper)
+    eventLi.appendChild(eventWrapper);
     eventsList.appendChild(eventLi);
 
     eventName.addEventListener('input', (e) => {
-        eventName.value = eventName.value.slice(0, 50)
-    })
+        eventName.value = eventName.value.slice(0, 50);
+    });
     eventHour.addEventListener('input', (e) => {
-        eventHour.value = eventHour.value.replace(/[^0-9:]/g, '')
-        if(eventHour.value.length === 2) {
+        eventHour.value = eventHour.value.replace(/[^0-9:]/g, '');
+        if (eventHour.value.length === 2) {
             eventHour.value += ':';
         }
         if (eventHour.value.length > 5) {
@@ -318,104 +262,114 @@ function eventCreator () {
         eventsArray.push(newEvent);
         activeDay = eventAppendDate[0];
         updateEvents(activeDay);
-    })
+    });
     cancelButton.addEventListener("click", () => {
         eventLi.remove();
         createAddButton();
-    })
-};
+    });
+}
 
 function createAddButton() {
-    const addButton = document.createElement('li')
-    addButton.innerHTML = '+'
+    const addButton = document.createElement('li');
+    addButton.innerHTML = '+';
     addButton.classList.add('add-event');
-    eventsList.appendChild(addButton)
-    const addDiv = document.querySelector('.add-event')
-    addDiv.addEventListener('click', () => eventCreator())
-};
+    eventsList.appendChild(addButton);
+    const addDiv = document.querySelector('.add-event');
+    addDiv.addEventListener('click', () => eventCreator());
+}
 
 function addListener() {
     const days = document.querySelectorAll('.day');
     days.forEach((day) => {
         day.addEventListener('click', (e) => {
-            activeDay = e.target.innerHTML;
+            const date = new Date(e.target.getAttribute('data-date'));
+            activeDay = date.getDate();
+            year = date.getFullYear();
+            month = date.getMonth();
+
             days.forEach((day) => {
                 day.classList.remove('active');
-            })
-            if(e.target.classList.contains('prev-date')){
-                prevMonth();
-                setTimeout(() =>{
-                    const days = document.querySelectorAll('.day')
-                    days.forEach((day) => {
-                        if(
-                            !day.classList.contains('prev-date')&&
-                        day.innerHTML === e.target.innerHTML
-                        ){
-                            day.classList.add('active');
-                        }
-                    })
-                }, 100)
-            }
-            else if(e.target.classList.contains('next-date')){
-                nextMonth();
-                setTimeout(() =>{
-                    const days = document.querySelectorAll('.day')
-                    days.forEach((day) => {
-                        if(
-                            !day.classList.contains('next-date')&&
-                        day.innerHTML === e.target.innerHTML
-                        ){
-                            day.classList.add('active');
-                        }
-                    })
-                }, 100)
-            }
-            else{
-                e.target.classList.add('active');
-            }
-            updateEvents(e.target.innerHTML);
-            getActiveDay(e.target.innerHTML);
-        })})
+            });
+            e.target.classList.add('active');
+
+            updateEvents(activeDay);
+            getActiveDay(activeDay);
+        });
+    });
 }
 
-function getActiveDay(date){
+function getActiveDay(date) {
     const day = new Date(year, month, date);
     const dayName = daysFullname[day.getDay()];
     eventDay.innerHTML = dayName;
-    eventDate.innerHTML = date + ' ' + months[month] + ' ' + year;
+    eventDate.innerHTML = `${date} ${months[month]} ${year}`;
 }
 
-function updateEvents(date) {
-    eventsList.innerHTML = ' '
+async function updateEvents(date) {
+    eventsList.innerHTML = '';
     date = parseInt(date);
-    eventsArray.forEach((evento) => {
-        const eventLiGenerator = document.createElement('li');
-        if (date === evento.day &&
-            month + 1 === evento.month &&
-            year === evento.year) {
+    const holidays = await fetchHolidays(year);
+    const isHoliday = holidays.find(h => new Date(h.date).getDate() === date && new Date(h.date).getMonth() === month);
+
+    // Adiciona o feriado como um evento
+    if (isHoliday) {
+        const holidayLi = document.createElement('li');
+        holidayLi.classList.add('filled', 'holiday-item');
+        holidayLi.innerHTML = `
+            <div class="event-desc">
+                <div class="title">${isHoliday.name}</div>
+                <div class="hour">${isHoliday.type}</div>
+            </div>
+        `;
+        eventsList.appendChild(holidayLi);
+    }
+
+    // Adiciona os eventos/tarefas
+    const filteredEvents = eventsArray.filter(
+        evento => date === evento.day && month + 1 === evento.month && year === evento.year
+    );
+
+    if (filteredEvents.length > 0) {
+        filteredEvents.forEach((evento) => {
             evento.events.forEach((event) => {
-                eventLiGenerator.innerHTML =
-                `
-                <div class="event-desc">
-                    <div class="title">${event.title}</div>
-                    <div class="hour">${event.time}</div>
-                </div>
-                `
+                const eventLiGenerator = document.createElement('li');
+                eventLiGenerator.innerHTML = `
+                    <div class="event-desc">
+                        <div class="title">${event.title}</div>
+                        <div class="hour">${event.time}</div>
+                    </div>
+                `;
                 eventLiGenerator.classList.add('filled');
                 eventLiGenerator.id = eventsArray.indexOf(evento);
                 eventsList.appendChild(eventLiGenerator);
             });
-        }
-    })
+        });
+    }
+
     const allEvents = document.querySelectorAll('.filled');
     allEvents.forEach((event) => {
-        event.addEventListener('click', () => {
-            event.classList.add('checked');
-            delete eventsArray[event.id];
-        })
-    })
+        if (!event.classList.contains('holiday-item')) {
+            event.addEventListener('click', () => {
+                event.classList.add('checked');
+                delete eventsArray[event.id];
+            });
+        }
+    });
+    
+    // Se não houver feriados nem tarefas, adicione a mensagem de "Nenhuma tarefa"
+    if (!isHoliday && filteredEvents.length === 0) {
+      const noTasksLi = document.createElement('li');
+      noTasksLi.classList.add('no-tasks');
+      noTasksLi.innerHTML = `
+        <i class="fas fa-plus-circle"></i>
+        <span>Nenhuma tarefa</span>
+      `;
+      eventsList.appendChild(noTasksLi);
+    }
+    
     createAddButton();
 }
 
-const body = document.body;
-console.log(body.clientWidth)
+initCalendar();
+getActiveDay(today.getDate());
+updateEvents(today.getDate());

@@ -710,7 +710,7 @@ body {
 
 /* Event Items */
 .s-main .container .right .events .event-list li.filled {
-  background: rgba(255, 255, 255, 0.9);
+  background: rgba(255, 255, 255, 0.1);
   padding: 1.5rem;
   border-radius: var(--border-radius);
   margin-bottom: 1rem;

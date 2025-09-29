@@ -40,7 +40,6 @@ router.get('/', async (req, res) => {
             eventDay: now.toLocaleDateString('pt-BR', { weekday: 'long' }),
             eventDate: now.toLocaleDateString('pt-BR'),
             events: [],
-            holidays: []
         });
     }
 });
