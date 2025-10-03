@@ -719,12 +719,12 @@ body {
   backdrop-filter: blur(10px);
 }
 
-.s-main .container .right .events .event-list li.filled::before {
+.task-checkbox {
   content: "";
   width: 2.4rem;
   height: 2.4rem;
   display: inline-block;
-  border: 2px solid var(--primary-color);
+  border: 0.5rem solid var(--primary-color);
   border-radius: 50%;
   position: relative;
   margin-right: 1.5rem;
@@ -1188,10 +1188,10 @@ body {
 
 .progress-bar-wrapper {
     width: 100%;
-    background: #e0e0e0;
+    background: rgba(255, 255, 255, 0.2);
     border-radius: 10px;
     overflow: hidden;
-    height: 20px;
+    height: 15px;
 }
 
 .progress-bar {
@@ -1203,24 +1203,30 @@ body {
 .progress-info {
     display: flex;
     justify-content: space-between;
-    margin-top: 1rem;
-    font-size: 1.4rem;
+    margin-top: 0.5rem;
+    font-size: 1.2rem;
     color: var(--text-darker);
 }
 
-.last-tasks-section {
-  margin-top: 3rem;
+.tasks-section .tasks-title {
+  margin-top: 2rem;
+}
+
+.priority {
+    padding: 0.2rem 0.8rem;
+    border-radius: 1rem;
+    width: fit-content;
 }
 
 /* Estilos de prioridade das tarefas */
 .priority-high {
-    border-left: 5px solid #f44336; /* Vermelho para alta prioridade */
+    background-color: #f44336; /* Vermelho para alta prioridade */
 }
 
 .priority-medium {
-    border-left: 5px solid #ff9800; /* Laranja para média prioridade */
+    background-color: #ff9800; /* Laranja para média prioridade */
 }
 
 .priority-low {
-    border-left: 5px solid #4caf50; /* Verde para baixa prioridade */
+    background-color: #4caf50; /* Verde para baixa prioridade */
 }

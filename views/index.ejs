@@ -42,7 +42,7 @@
             <div>sab</div>
           </div>
           <div class="days">
-            </div>
+          </div>
           <div class="goto-today">
             <div class="goto">
               <input type="text" placeholder="mm/yyyy" class="date-input">
@@ -63,8 +63,20 @@
               <i class="fas fa-tasks"></i>
               Suas Tarefas
             </h3>
+            
+            <div class="progress-bar-container">
+              <h3>Progresso das Tarefas</h3>
+              <div class="progress-bar-wrapper">
+                <div class="progress-bar" style="width: <%= stats.completionPercentage %>%"></div>
+              </div>
+              <div class="progress-info">
+                <span>Concluídas: <%= stats.completedTasks %></span>
+                <span>Pendentes: <%= stats.pendingTasks %></span>
+              </div>
+            </div>
+            
             <ul class="event-list">
-              </ul>
+            </ul>
           </div>
         </div>
       </div>

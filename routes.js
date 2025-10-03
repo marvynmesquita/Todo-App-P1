@@ -1,3 +1,5 @@
+// routes.js
+
 const express = require('express');
 const holidaysService = require('./services/holidaysService');
 const { ObjectId } = require('mongodb'); // Importe ObjectId
@@ -21,6 +23,18 @@ module.exports = (db) => {
             const user = await usersCollection.findOne({ _id: new ObjectId(req.session.userId) });
             const userTasks = user ? user.tasks : [];
 
+            // Adicione a lógica para calcular as estatísticas aqui
+            const totalTasks = userTasks.length;
+            const completedTasks = userTasks.filter(t => t.isCompleted).length;
+            const pendingTasks = totalTasks - completedTasks;
+            const completionPercentage = totalTasks > 0 ? (completedTasks / totalTasks) * 100 : 0;
+            const stats = {
+                totalTasks,
+                completedTasks,
+                pendingTasks,
+                completionPercentage: completionPercentage.toFixed(2)
+            };
+
             res.render('index', {
                 title: 'Home',
                 userName: req.session.userName,
@@ -30,7 +44,8 @@ module.exports = (db) => {
                 eventDay,
                 eventDate,
                 events: userTasks,
-                holidays: holidays
+                holidays: holidays,
+                stats: stats // Passe o objeto stats para o EJS
             });
         } catch (error) {
             console.error('Erro ao carregar página principal:', error);
@@ -44,11 +59,12 @@ module.exports = (db) => {
                 eventDay: now.toLocaleDateString('pt-BR', { weekday: 'long' }),
                 eventDate: now.toLocaleDateString('pt-BR'),
                 events: [],
+                stats: { totalTasks: 0, completedTasks: 0, pendingTasks: 0, completionPercentage: 0 } // Passe valores padrão em caso de erro
             });
         }
     });
 
-    // Nova rota para buscar tarefas de um usuário para uma data específica
+    // Rota para buscar tarefas de um usuário para uma data específica
     router.get('/tasks/:date', async (req, res) => {
         try {
             const { date } = req.params;
@@ -84,7 +100,7 @@ module.exports = (db) => {
                 isCompleted: false
             };
 
-            const usersCollection = db.collection('users'); // Usa o `db` recebido
+            const usersCollection = db.collection('users');
             await usersCollection.updateOne(
                 { _id: new ObjectId(req.session.userId) },
                 { $push: { tasks: newTask } }
@@ -102,7 +118,7 @@ module.exports = (db) => {
         try {
             const { id } = req.params;
 
-            const usersCollection = db.collection('users'); // Usa o `db` recebido
+            const usersCollection = db.collection('users');
             await usersCollection.updateOne(
                 { _id: new ObjectId(req.session.userId) },
                 { $pull: { tasks: { id: id } } }
@@ -144,6 +160,40 @@ module.exports = (db) => {
         } catch (error) {
             console.error('Erro ao atualizar status da tarefa:', error);
             res.status(500).json({ error: 'Erro ao atualizar status da tarefa.' });
+        }
+    });
+
+    router.get('/dashboard', async (req, res) => {
+        try {
+            const usersCollection = db.collection('users');
+            const user = await usersCollection.findOne({ _id: new ObjectId(req.session.userId) });
+            
+            if (!user) {
+                return res.status(404).json({ error: 'Usuário não encontrado.' });
+            }
+
+            const tasks = user.tasks;
+            const totalTasks = tasks.length;
+            const completedTasks = tasks.filter(t => t.isCompleted).length;
+            const pendingTasks = totalTasks - completedTasks;
+            const completionPercentage = totalTasks > 0 ? (completedTasks / totalTasks) * 100 : 0;
+            
+            const lastFiveTasks = tasks.slice(-5).reverse(); // Pegar as últimas 5 tarefas
+
+            res.render('dashboard', {
+                title: 'Dashboard',
+                userName: req.session.userName,
+                stats: {
+                    totalTasks,
+                    completedTasks,
+                    pendingTasks,
+                    completionPercentage: completionPercentage.toFixed(2)
+                },
+                lastTasks: lastFiveTasks
+            });
+        } catch (error) {
+            console.error('Erro ao carregar dashboard:', error);
+            res.render('dashboard', { title: 'Dashboard', error: 'Não foi possível carregar as estatísticas.' });
         }
     });
 
