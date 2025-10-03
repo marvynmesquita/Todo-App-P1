@@ -16,6 +16,7 @@ let activeDay;
 let month = today.getMonth();
 let year = today.getFullYear();
 let fetchedHolidays = {}; // Cache para feriados por ano
+let userTasks = [];
 
 const months = [
     'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
@@ -80,6 +81,23 @@ async function fetchHolidays(yearToFetch) {
     }
 }
 
+// Nova função para buscar tarefas do usuário
+async function fetchUserTasks(dateString) {
+    console.log('4. URL de requisição para buscar tarefas:', `/tasks/${dateString}`);
+    try {
+        const response = await fetch(`/tasks/${dateString}`);
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        const tasks = await response.json();
+        console.log('5. Dados de tarefas recebidos:', tasks);
+        return tasks;
+    } catch (error) {
+        console.error("Erro ao buscar tarefas:", error);
+        return [];
+    }
+}
+
 async function initCalendar() {
     const holidays = await fetchHolidays(year);
 
@@ -97,8 +115,7 @@ async function initCalendar() {
     // Dias do mês anterior
     for (let x = day; x > 0; x--) {
         const dayNumber = prevDays - x + 1;
-        const event = eventsArray.find(e => e.day === dayNumber && e.month - 1 === month - 1 && e.year === year);
-        daysHtml += `<div class="day prev-date ${event ? 'event' : ''}">${dayNumber}</div>`;
+        daysHtml += `<div class="day prev-date">${dayNumber}</div>`;
     }
 
     // Dias do mês atual
@@ -107,11 +124,9 @@ async function initCalendar() {
         const dateString = currentDate.toISOString().split('T')[0];
         const isToday = currentDate.toDateString() === new Date().toDateString();
         const isHoliday = holidays.find(h => h.date === dateString);
-        const event = eventsArray.find(e => e.day === i && e.month - 1 === month && e.year === year);
 
         let classList = "day";
         if (isToday) classList += " today";
-        if (event) classList += " event";
         if (isHoliday) classList += " holiday";
         
         const holidayName = isHoliday ? isHoliday.name : '';
@@ -128,8 +143,7 @@ async function initCalendar() {
 
     // Dias do próximo mês
     for (let j = 1; j < nextDays; j++) {
-        const event = eventsArray.find(e => e.day === j && e.month - 1 === month + 1 && e.year === year);
-        daysHtml += `<div class="day next-date ${event ? 'event' : ''}">${j}</div>`;
+        daysHtml += `<div class="day next-date">${j}</div>`;
     }
 
     daysContainer.innerHTML = daysHtml;
@@ -244,25 +258,44 @@ function eventCreator() {
             }
         }
     });
-    okBtn.addEventListener("click", () => {
+
+    okBtn.addEventListener("click", async () => {
         const eventAppendTitle = eventName.value;
         const eventAppendHour = eventHour.value;
-        const eventAppendDate = eventDate.innerHTML.split(" ");
-        const newEvent = {
-            day: parseInt(eventAppendDate[0]),
-            month: months.indexOf(eventAppendDate[1]) + 1,
-            year: parseInt(eventAppendDate[2]),
-            events: [
-                {
-                    title: eventAppendTitle,
-                    time: eventAppendHour,
-                },
-            ],
-        };
-        eventsArray.push(newEvent);
-        activeDay = eventAppendDate[0];
-        updateEvents(activeDay);
+        const eventAppendDate = eventDate.innerHTML;
+        const [day, monthName, year] = eventAppendDate.split(' ');
+        const monthIndex = months.indexOf(monthName);
+        const dateString = `${year}-${(monthIndex + 1).toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}`;
+
+        if (eventAppendTitle && eventAppendHour) {
+            // Formatar a hora para o padrão HH:MM antes de enviar
+            const formattedTime = formatTime(eventAppendHour);
+
+            try {
+                const response = await fetch('/tasks', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        date: dateString,
+                        title: eventAppendTitle,
+                        time: formattedTime
+                    })
+                });
+                if (response.ok) {
+                    eventLi.remove();
+                    createAddButton();
+                    await updateEvents(day); // Chama a função de atualização para recarregar a lista
+                } else {
+                    console.error('Falha ao adicionar a tarefa.');
+                }
+            } catch (error) {
+                console.error('Erro de rede ao adicionar tarefa:', error);
+            }
+        }
     });
+
     cancelButton.addEventListener("click", () => {
         eventLi.remove();
         createAddButton();
@@ -281,19 +314,25 @@ function createAddButton() {
 function addListener() {
     const days = document.querySelectorAll('.day');
     days.forEach((day) => {
-        day.addEventListener('click', (e) => {
-            const date = new Date(e.target.getAttribute('data-date'));
+        day.addEventListener('click', async (e) => {
+            const dateAttribute = e.target.getAttribute('data-date');
+            console.log('1. Atributo data-date do elemento clicado:', dateAttribute);
+
+            const date = new Date(dateAttribute + 'T12:00:00');
             activeDay = date.getDate();
             year = date.getFullYear();
             month = date.getMonth();
+
+            console.log('2. Objeto Date criado (formato string):', date.toString());
+            console.log('3. Variáveis de data setadas: dia=', activeDay, 'mês=', month, 'ano=', year);
 
             days.forEach((day) => {
                 day.classList.remove('active');
             });
             e.target.classList.add('active');
 
-            updateEvents(activeDay);
             getActiveDay(activeDay);
+            await updateEvents(activeDay);
         });
     });
 }
@@ -307,9 +346,11 @@ function getActiveDay(date) {
 
 async function updateEvents(date) {
     eventsList.innerHTML = '';
-    date = parseInt(date);
     const holidays = await fetchHolidays(year);
-    const isHoliday = holidays.find(h => new Date(h.date).getDate() === date && new Date(h.date).getMonth() === month);
+    const dateString = `${year}-${(month + 1).toString().padStart(2, '0')}-${date.toString().padStart(2, '0')}`;
+    const isHoliday = holidays.find(h => h.date === dateString);
+
+    console.log('6. Buscando eventos para a data:', dateString);
 
     // Adiciona o feriado como um evento
     if (isHoliday) {
@@ -323,51 +364,75 @@ async function updateEvents(date) {
         `;
         eventsList.appendChild(holidayLi);
     }
+    
+    // Buscar tarefas para o dia ativo
+    const tasksForActiveDay = await fetchUserTasks(dateString);
 
-    // Adiciona os eventos/tarefas
-    const filteredEvents = eventsArray.filter(
-        evento => date === evento.day && month + 1 === evento.month && year === evento.year
-    );
-
-    if (filteredEvents.length > 0) {
-        filteredEvents.forEach((evento) => {
-            evento.events.forEach((event) => {
-                const eventLiGenerator = document.createElement('li');
-                eventLiGenerator.innerHTML = `
-                    <div class="event-desc">
-                        <div class="title">${event.title}</div>
-                        <div class="hour">${event.time}</div>
-                    </div>
-                `;
-                eventLiGenerator.classList.add('filled');
-                eventLiGenerator.id = eventsArray.indexOf(evento);
-                eventsList.appendChild(eventLiGenerator);
-            });
+    if (tasksForActiveDay.length > 0) {
+        tasksForActiveDay.forEach((event) => {
+            const eventLiGenerator = document.createElement('li');
+            eventLiGenerator.innerHTML = `
+                <div class="event-desc">
+                    <div class="title">${event.title}</div>
+                    <div class="hour">${formatTime(event.time)}</div>
+                </div>
+            `;
+            eventLiGenerator.classList.add('filled');
+            eventLiGenerator.dataset.taskId = event.id;
+            eventsList.appendChild(eventLiGenerator);
         });
+    } else {
+        // Se não houver feriados nem tarefas, adicione a mensagem de "Nenhuma tarefa"
+        const noTasksLi = document.createElement('li');
+        noTasksLi.classList.add('no-tasks');
+        noTasksLi.innerHTML = `
+            <i class="fas fa-plus-circle"></i>
+            <span>Nenhuma tarefa</span>
+        `;
+        eventsList.appendChild(noTasksLi);
     }
 
     const allEvents = document.querySelectorAll('.filled');
     allEvents.forEach((event) => {
         if (!event.classList.contains('holiday-item')) {
-            event.addEventListener('click', () => {
-                event.classList.add('checked');
-                delete eventsArray[event.id];
+            event.addEventListener('click', async () => {
+                const taskId = event.dataset.taskId;
+                try {
+                    const response = await fetch(`/tasks/${taskId}`, {
+                        method: 'DELETE'
+                    });
+                    if (response.ok) {
+                        event.remove();
+                        // Remover a tarefa do array local
+                        userTasks = userTasks.filter(task => task.id !== taskId);
+                        // Atualizar a visualização
+                        await updateEvents(activeDay);
+                    } else {
+                        console.error('Falha ao remover a tarefa.');
+                    }
+                } catch (error) {
+                    console.error('Erro de rede ao remover tarefa:', error);
+                }
             });
         }
     });
-    
-    // Se não houver feriados nem tarefas, adicione a mensagem de "Nenhuma tarefa"
-    if (!isHoliday && filteredEvents.length === 0) {
-      const noTasksLi = document.createElement('li');
-      noTasksLi.classList.add('no-tasks');
-      noTasksLi.innerHTML = `
-        <i class="fas fa-plus-circle"></i>
-        <span>Nenhuma tarefa</span>
-      `;
-      eventsList.appendChild(noTasksLi);
-    }
-    
+
     createAddButton();
+}
+
+// Nova função para formatar a hora (adicione ao final do arquivo)
+function formatTime(timeStr) {
+  // Se a hora já tem dois pontos, retorna como está
+  if (timeStr.includes(':')) {
+    return timeStr;
+  }
+  
+  // Se for um número de 4 dígitos, insere os dois pontos
+  if (timeStr.length === 4 && !isNaN(timeStr)) {
+    return timeStr.slice(0, 2) + ':' + timeStr.slice(2);
+  }
+
+  return timeStr;
 }
 
 initCalendar();
