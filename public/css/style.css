@@ -738,18 +738,6 @@ body {
   opacity: 0.7;
 }
 
-.s-main .container .right .events .event-list li.filled.checked::before {
-  border-color: #1b5e20;
-  background: #1b5e20;
-  content: "✓";
-  font-size: 1.6rem;
-  text-align: center;
-  color: white;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
 .s-main .container .right .events .event-list li.filled.checked .event-desc .title,
 .s-main .container .right .events .event-list li.filled.checked .event-desc .hour {
   text-decoration: line-through;

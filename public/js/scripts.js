@@ -12,7 +12,7 @@ const eventsList = document.querySelector('.event-list'),
     eventDate = document.querySelector('.event-date');
 
 let today = new Date();
-let activeDay;
+let activeDay = today.getDate(); // CORREÇÃO: Inicialize com o dia atual
 let month = today.getMonth();
 let year = today.getFullYear();
 let fetchedHolidays = {}; // Cache para feriados por ano
@@ -302,7 +302,6 @@ function addListener() {
             const dateAttribute = e.target.getAttribute('data-date');
             console.log('1. Atributo data-date do elemento clicado:', dateAttribute);
 
-            // CORREÇÃO: Cria a data no fuso horário local
             const date = new Date(dateAttribute + 'T12:00:00'); 
             activeDay = date.getDate();
             year = date.getFullYear();
@@ -355,7 +354,6 @@ async function updateEvents(date) {
         tasksForActiveDay.forEach((event) => {
             const eventLiGenerator = document.createElement('li');
             
-            // Adicionando a classe 'checked' e 'priority'
             let classList = ['filled'];
             if (event.isCompleted) {
                 classList.push('checked');
@@ -379,7 +377,6 @@ async function updateEvents(date) {
             eventLiGenerator.dataset.taskId = event.id;
             eventsList.appendChild(eventLiGenerator);
 
-            // Adicionar o event listener para o checkbox
             const checkbox = eventLiGenerator.querySelector('.task-checkbox');
             checkbox.addEventListener('change', async () => {
                 try {
@@ -391,6 +388,8 @@ async function updateEvents(date) {
                     if (response.ok) {
                         eventLiGenerator.classList.toggle('checked');
                         await updateEvents(activeDay);
+                        // Adicionado para recarregar a barra de progresso
+                        await updateProgressBar();
                     }
                 } catch (error) {
                     console.error('Erro ao atualizar status da tarefa:', error);
@@ -410,39 +409,63 @@ async function updateEvents(date) {
     const allEvents = document.querySelectorAll('.filled');
     allEvents.forEach((event) => {
         if (!event.classList.contains('holiday-item')) {
-            event.addEventListener('click', async () => {
-                const taskId = event.dataset.taskId;
-                try {
-                    const response = await fetch(`/tasks/${taskId}`, {
-                        method: 'DELETE'
-                    });
-                    if (response.ok) {
-                        event.remove();
-                        // Remover a tarefa do array local
-                        userTasks = userTasks.filter(task => task.id !== taskId);
-                        // Atualizar a visualização
-                        await updateEvents(activeDay);
-                    } else {
-                        console.error('Falha ao remover a tarefa.');
+            const deleteButton = document.createElement('button');
+            deleteButton.classList.add('delete-task-btn');
+            deleteButton.innerHTML = '&times;';
+            event.appendChild(deleteButton);
+            
+            deleteButton.addEventListener('click', async (e) => {
+                e.stopPropagation();
+                if (confirm('Tem certeza que deseja excluir esta tarefa?')) {
+                    const taskId = event.dataset.taskId;
+                    try {
+                        const response = await fetch(`/tasks/${taskId}`, {
+                            method: 'DELETE'
+                        });
+                        if (response.ok) {
+                            event.remove();
+                            userTasks = userTasks.filter(task => task.id !== taskId);
+                            await updateEvents(activeDay);
+                            // Adicionado para recarregar a barra de progresso
+                            await updateProgressBar();
+                        } else {
+                            console.error('Falha ao remover a tarefa.');
+                        }
+                    } catch (error) {
+                        console.error('Erro de rede ao remover tarefa:', error);
                     }
-                } catch (error) {
-                    console.error('Erro de rede ao remover tarefa:', error);
                 }
             });
         }
     });
-
     createAddButton();
 }
+// Nova função para atualizar a barra de progresso dinamicamente
+async function updateProgressBar() {
+    try {
+        const response = await fetch('/stats');
+        const stats = await response.json();
+        
+        const progressBar = document.querySelector('.progress-bar');
+        const completedSpan = document.querySelector('.progress-info span:first-child');
+        const pendingSpan = document.querySelector('.progress-info span:last-child');
 
-// Nova função para formatar a hora (adicione ao final do arquivo)
+        if (progressBar && completedSpan && pendingSpan) {
+            progressBar.style.width = `${stats.completionPercentage}%`;
+            completedSpan.textContent = `Concluídas: ${stats.completedTasks}`;
+            pendingSpan.textContent = `Pendentes: ${stats.pendingTasks}`;
+        }
+        console.log('Barra de progresso atualizada:', stats);
+    } catch (error) {
+        console.error('Erro ao atualizar a barra de progresso:', error);
+    }
+}
+
 function formatTime(timeStr) {
-  // Se a hora já tem dois pontos, retorna como está
   if (timeStr.includes(':')) {
     return timeStr;
   }
   
-  // Se for um número de 4 dígitos, insere os dois pontos
   if (timeStr.length === 4 && !isNaN(timeStr)) {
     return timeStr.slice(0, 2) + ':' + timeStr.slice(2);
   }

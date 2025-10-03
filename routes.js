@@ -197,6 +197,33 @@ module.exports = (db) => {
         }
     });
 
+    router.get('/stats', async (req, res) => {
+        try {
+            const usersCollection = db.collection('users');
+            const user = await usersCollection.findOne({ _id: new ObjectId(req.session.userId) });
+
+            if (!user) {
+                return res.status(404).json({ error: 'Usuário não encontrado.' });
+            }
+
+            const tasks = user.tasks;
+            const totalTasks = tasks.length;
+            const completedTasks = tasks.filter(t => t.isCompleted).length;
+            const pendingTasks = totalTasks - completedTasks;
+            const completionPercentage = totalTasks > 0 ? (completedTasks / totalTasks) * 100 : 0;
+            
+            res.json({
+                totalTasks,
+                completedTasks,
+                pendingTasks,
+                completionPercentage: parseFloat(completionPercentage.toFixed(2))
+            });
+        } catch (error) {
+            console.error('Erro ao buscar estatísticas:', error);
+            res.status(500).json({ error: 'Erro ao buscar estatísticas.' });
+        }
+    });
+
     /**
      * Gera os dias do calendário com informações de feriados
      * @param {Date} date - Data de referência
