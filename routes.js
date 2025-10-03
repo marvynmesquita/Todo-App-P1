@@ -73,12 +73,15 @@ module.exports = (db) => {
     // Nova rota para adicionar uma tarefa
     router.post('/tasks', async (req, res) => {
         try {
-            const { date, title, time } = req.body;
+            const { date, title, description, priority, time } = req.body;
             const newTask = {
                 id: Date.now().toString(),
                 date: date,
                 title: title,
-                time: time
+                description: description,
+                priority: priority,
+                time: time,
+                isCompleted: false
             };
 
             const usersCollection = db.collection('users'); // Usa o `db` recebido
@@ -121,6 +124,60 @@ module.exports = (db) => {
         } catch (error) {
             console.error('Erro ao buscar feriados:', error);
             res.status(500).json({ error: 'Erro ao buscar feriados' });
+        }
+    });
+
+    // Rota para marcar/desmarcar uma tarefa como concluída
+    router.patch('/tasks/:id/toggle', async (req, res) => {
+        try {
+            const { id } = req.params;
+            const { isCompleted } = req.body;
+            const usersCollection = db.collection('users');
+            const userId = new ObjectId(req.session.userId);
+
+            await usersCollection.updateOne(
+                { _id: userId, "tasks.id": id },
+                { $set: { "tasks.$.isCompleted": isCompleted } }
+            );
+
+            res.status(200).json({ message: 'Status da tarefa atualizado com sucesso.' });
+        } catch (error) {
+            console.error('Erro ao atualizar status da tarefa:', error);
+            res.status(500).json({ error: 'Erro ao atualizar status da tarefa.' });
+        }
+    });
+
+    router.get('/dashboard', async (req, res) => {
+        try {
+            const usersCollection = db.collection('users');
+            const user = await usersCollection.findOne({ _id: new ObjectId(req.session.userId) });
+            
+            if (!user) {
+                return res.status(404).json({ error: 'Usuário não encontrado.' });
+            }
+
+            const tasks = user.tasks;
+            const totalTasks = tasks.length;
+            const completedTasks = tasks.filter(t => t.isCompleted).length;
+            const pendingTasks = totalTasks - completedTasks;
+            const completionPercentage = totalTasks > 0 ? (completedTasks / totalTasks) * 100 : 0;
+            
+            const lastFiveTasks = tasks.slice(-5).reverse(); // Pegar as últimas 5 tarefas
+
+            res.render('dashboard', {
+                title: 'Dashboard',
+                userName: req.session.userName,
+                stats: {
+                    totalTasks,
+                    completedTasks,
+                    pendingTasks,
+                    completionPercentage: completionPercentage.toFixed(2)
+                },
+                lastTasks: lastFiveTasks
+            });
+        } catch (error) {
+            console.error('Erro ao carregar dashboard:', error);
+            res.render('dashboard', { title: 'Dashboard', error: 'Não foi possível carregar as estatísticas.' });
         }
     });
 

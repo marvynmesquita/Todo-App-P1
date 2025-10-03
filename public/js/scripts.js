@@ -27,41 +27,6 @@ const daysFullname = [
     'Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'
 ];
 
-var eventsArray = [
-    {
-        day: 30,
-        month: 1,
-        year: 2023,
-        events: [
-            {
-                title: 'O dia que passei desenvolvendo esta aplicação',
-                time: '00:00',
-            },
-        ],
-    },
-    {
-        day: 31,
-        month: 1,
-        year: 2023,
-        events: [
-            {
-                title: 'Limite de dia para entregar o projeto de lista de tarefas',
-                time: '23:59',
-            },
-        ],
-    },
-    {
-        day: 1,
-        month: 2,
-        year: 2023,
-        events: [
-            {
-                title: 'Tempo para relaxar... zzzz...',
-                time: '00:00',
-            },
-        ],
-    },
-];
 
 async function fetchHolidays(yearToFetch) {
     if (fetchedHolidays[yearToFetch]) {
@@ -177,7 +142,8 @@ todayBtn.addEventListener('click', () => {
     today = new Date();
     month = today.getMonth();
     year = today.getFullYear();
-    activeDay = undefined;
+    // CORREÇÃO: Defina activeDay para o dia atual
+    activeDay = today.getDate(); 
     initCalendar();
     getActiveDay(today.getDate());
     updateEvents(today.getDate());
@@ -220,6 +186,23 @@ function eventCreator() {
     eventName.classList.add('event-input', 'event-name');
     eventName.placeholder = "Nome da tarefa";
     eventWrapper.appendChild(eventName);
+    
+    // Adicione um campo para a descrição
+    const eventDescription = document.createElement("textarea");
+    eventDescription.classList.add('event-input', 'event-description');
+    eventDescription.placeholder = "Descrição da tarefa (opcional)";
+    eventWrapper.appendChild(eventDescription);
+    
+    // Adicione um campo para a prioridade (ex: um select)
+    const eventPriority = document.createElement("select");
+    eventPriority.classList.add('event-input', 'event-priority');
+    eventPriority.innerHTML = `
+        <option value="low">Baixa</option>
+        <option value="medium" selected>Média</option>
+        <option value="high">Alta</option>
+    `;
+    eventWrapper.appendChild(eventPriority);
+    
     const eventHour = document.createElement("input");
     eventHour.classList.add('event-input', 'event-hour');
     eventHour.placeholder = "Hora da tarefa";
@@ -261,6 +244,8 @@ function eventCreator() {
 
     okBtn.addEventListener("click", async () => {
         const eventAppendTitle = eventName.value;
+        const eventAppendDescription = eventDescription.value;
+        const eventAppendPriority = eventPriority.value;
         const eventAppendHour = eventHour.value;
         const eventAppendDate = eventDate.innerHTML;
         const [day, monthName, year] = eventAppendDate.split(' ');
@@ -268,25 +253,24 @@ function eventCreator() {
         const dateString = `${year}-${(monthIndex + 1).toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}`;
 
         if (eventAppendTitle && eventAppendHour) {
-            // Formatar a hora para o padrão HH:MM antes de enviar
             const formattedTime = formatTime(eventAppendHour);
 
             try {
                 const response = await fetch('/tasks', {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
+                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         date: dateString,
                         title: eventAppendTitle,
+                        description: eventAppendDescription,
+                        priority: eventAppendPriority,
                         time: formattedTime
                     })
                 });
                 if (response.ok) {
                     eventLi.remove();
                     createAddButton();
-                    await updateEvents(day); // Chama a função de atualização para recarregar a lista
+                    await updateEvents(day);
                 } else {
                     console.error('Falha ao adicionar a tarefa.');
                 }
@@ -318,7 +302,8 @@ function addListener() {
             const dateAttribute = e.target.getAttribute('data-date');
             console.log('1. Atributo data-date do elemento clicado:', dateAttribute);
 
-            const date = new Date(dateAttribute + 'T12:00:00');
+            // CORREÇÃO: Cria a data no fuso horário local
+            const date = new Date(dateAttribute + 'T12:00:00'); 
             activeDay = date.getDate();
             year = date.getFullYear();
             month = date.getMonth();
@@ -371,13 +356,19 @@ async function updateEvents(date) {
     if (tasksForActiveDay.length > 0) {
         tasksForActiveDay.forEach((event) => {
             const eventLiGenerator = document.createElement('li');
+             // Adicione a classe 'checked' condicionalmente
+            let classList = ['filled'];
+            if (event.isCompleted) {
+                classList.push('checked');
+            }
             eventLiGenerator.innerHTML = `
                 <div class="event-desc">
                     <div class="title">${event.title}</div>
+                    <div class="description">${event.description || ''}</div>
                     <div class="hour">${formatTime(event.time)}</div>
                 </div>
             `;
-            eventLiGenerator.classList.add('filled');
+            eventLiGenerator.classList.add(...classList);
             eventLiGenerator.dataset.taskId = event.id;
             eventsList.appendChild(eventLiGenerator);
         });
