@@ -337,7 +337,6 @@ async function updateEvents(date) {
 
     console.log('6. Buscando eventos para a data:', dateString);
 
-    // Adiciona o feriado como um evento
     if (isHoliday) {
         const holidayLi = document.createElement('li');
         holidayLi.classList.add('filled', 'holiday-item');
@@ -350,30 +349,55 @@ async function updateEvents(date) {
         eventsList.appendChild(holidayLi);
     }
     
-    // Buscar tarefas para o dia ativo
     const tasksForActiveDay = await fetchUserTasks(dateString);
 
     if (tasksForActiveDay.length > 0) {
         tasksForActiveDay.forEach((event) => {
             const eventLiGenerator = document.createElement('li');
-             // Adicione a classe 'checked' condicionalmente
+            
+            // Adicionando a classe 'checked' e 'priority'
             let classList = ['filled'];
             if (event.isCompleted) {
                 classList.push('checked');
             }
+            if (event.priority) {
+                classList.push(`priority-${event.priority}`);
+            }
+
             eventLiGenerator.innerHTML = `
+                <div class="task-checkbox-wrapper">
+                    <input type="checkbox" class="task-checkbox" ${event.isCompleted ? 'checked' : ''}>
+                </div>
                 <div class="event-desc">
                     <div class="title">${event.title}</div>
                     <div class="description">${event.description || ''}</div>
+                    <div class="priority priority-${event.priority}">${event.priority}</div>
                     <div class="hour">${formatTime(event.time)}</div>
                 </div>
             `;
             eventLiGenerator.classList.add(...classList);
             eventLiGenerator.dataset.taskId = event.id;
             eventsList.appendChild(eventLiGenerator);
+
+            // Adicionar o event listener para o checkbox
+            const checkbox = eventLiGenerator.querySelector('.task-checkbox');
+            checkbox.addEventListener('change', async () => {
+                try {
+                    const response = await fetch(`/tasks/${event.id}/toggle`, {
+                        method: 'PATCH',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ isCompleted: checkbox.checked })
+                    });
+                    if (response.ok) {
+                        eventLiGenerator.classList.toggle('checked');
+                        await updateEvents(activeDay);
+                    }
+                } catch (error) {
+                    console.error('Erro ao atualizar status da tarefa:', error);
+                }
+            });
         });
     } else {
-        // Se não houver feriados nem tarefas, adicione a mensagem de "Nenhuma tarefa"
         const noTasksLi = document.createElement('li');
         noTasksLi.classList.add('no-tasks');
         noTasksLi.innerHTML = `

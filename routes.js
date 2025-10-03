@@ -147,40 +147,6 @@ module.exports = (db) => {
         }
     });
 
-    router.get('/dashboard', async (req, res) => {
-        try {
-            const usersCollection = db.collection('users');
-            const user = await usersCollection.findOne({ _id: new ObjectId(req.session.userId) });
-            
-            if (!user) {
-                return res.status(404).json({ error: 'Usuário não encontrado.' });
-            }
-
-            const tasks = user.tasks;
-            const totalTasks = tasks.length;
-            const completedTasks = tasks.filter(t => t.isCompleted).length;
-            const pendingTasks = totalTasks - completedTasks;
-            const completionPercentage = totalTasks > 0 ? (completedTasks / totalTasks) * 100 : 0;
-            
-            const lastFiveTasks = tasks.slice(-5).reverse(); // Pegar as últimas 5 tarefas
-
-            res.render('dashboard', {
-                title: 'Dashboard',
-                userName: req.session.userName,
-                stats: {
-                    totalTasks,
-                    completedTasks,
-                    pendingTasks,
-                    completionPercentage: completionPercentage.toFixed(2)
-                },
-                lastTasks: lastFiveTasks
-            });
-        } catch (error) {
-            console.error('Erro ao carregar dashboard:', error);
-            res.render('dashboard', { title: 'Dashboard', error: 'Não foi possível carregar as estatísticas.' });
-        }
-    });
-
     /**
      * Gera os dias do calendário com informações de feriados
      * @param {Date} date - Data de referência
