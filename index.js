@@ -20,9 +20,13 @@ const PORT = process.env.PORT || 3000;
 const NODE_ENV = process.env.NODE_ENV || 'development';
 
 // Configuração do MongoDB
-const dbUser = process.env.DB_USER;
-const dbPass = process.env.DB_PASS;
-const uri = `mongodb+srv://${dbUser}:${dbPass}@cluster0.grrmfnw.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0`;
+const uri = process.env.DB_URI;
+
+// Função para limpar o console e mostrar mensagens
+const printMessage = (message) => {
+    console.clear();
+    console.log(message);
+};
 
 // Crie um cliente MongoClient
 const client = new MongoClient(uri, {
@@ -41,7 +45,6 @@ async function run() {
     await client.connect();
     // Envie um ping para confirmar uma conexão bem-sucedida
     await client.db("admin").command({ ping: 1 });
-    console.log("Conectado com sucesso ao MongoDB!");
     db = client.db('todo-app');
     
     // Middleware para arquivos estáticos
@@ -60,11 +63,27 @@ async function run() {
     
     // Iniciar o servidor Express somente após a conexão com o banco de dados
     app.listen(PORT, () => {
-      console.log(`Servidor rodando na porta ${PORT}`);
+      if(db) {
+        printMessage(`
+          ---------------------------------------
+          🚀 TODO APP iniciado em modo ${NODE_ENV}
+          🌎 Servidor rodando em http://localhost:${PORT}
+          ✅ Conectado ao MongoDB com sucesso!
+          ---------------------------------------
+        `);
+      } else {
+        printMessage(`
+          ---------------------------------------
+          🚀 TODO APP iniciado em modo ${NODE_ENV}
+          🌎 Servidor rodando em http://localhost:${PORT}
+          ❌ Falha na conexão com o MongoDB.
+          ---------------------------------------
+          `);
+      }
     });
 
   } catch (err) {
-    console.error('Falha na conexão com o MongoDB:', err);
+    printMessage(`Falha na conexão com o MongoDB: ${err}`);
     process.exit(1);
   }
 }

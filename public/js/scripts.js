@@ -349,6 +349,7 @@ async function updateEvents(date) {
     }
     
     const tasksForActiveDay = await fetchUserTasks(dateString);
+    var prioridade;
 
     if (tasksForActiveDay.length > 0) {
         tasksForActiveDay.forEach((event) => {
@@ -362,6 +363,14 @@ async function updateEvents(date) {
                 classList.push(`priority-${event.priority}`);
             }
 
+            if (event.priority === 'high') {
+                prioridade = 'Alta Prioridade';
+            } else if (event.priority === 'medium') {
+                prioridade = 'Média Prioridade';
+            } else {
+                prioridade = 'Baixa Prioridade';
+            }
+
             eventLiGenerator.innerHTML = `
                 <div class="task-checkbox-wrapper">
                     <input type="checkbox" class="task-checkbox" ${event.isCompleted ? 'checked' : ''}>
@@ -369,7 +378,7 @@ async function updateEvents(date) {
                 <div class="event-desc">
                     <div class="title">${event.title}</div>
                     <div class="description">${event.description || ''}</div>
-                    <div class="priority priority-${event.priority}">${event.priority}</div>
+                    <div class="priority priority-${event.priority}">${prioridade}</div>
                     <div class="hour">${formatTime(event.time)}</div>
                 </div>
             `;
