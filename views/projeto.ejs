@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title><%= title || 'Projeto' %></title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.2.1/css/all.min.css" integrity="sha512-MV7K8+y+gLIBoVD59lQIYicR65iaqukzvf/nwasF0nqhPay5w/9lJmVM2hMDcnK1OnMGCdVK+iQrJ7lzPJQd1w==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <div class="user-info-bar">
+    <div class="user-info">
+      <i class="fas fa-user-circle"></i>
+      <span>Olá, <%= userName || 'Usuário' %>!</span>
+    </div>
+    <div class="user-actions">
+      <a href="/projetos" class="logout-btn" title="Projetos">
+        <i class="fa-solid fa-diagram-project"></i>
+        Projetos
+      </a>
+      <a href="/logout" class="logout-btn" title="Sair">
+        <i class="fas fa-sign-out-alt"></i>
+        Sair
+      </a>
+    </div>
+  </div>
+
+  <section class="s-main">
+    <div class="container" style="gap: 24px; align-items: flex-start;">
+      <div class="right" style="width:100%">
+        <div class="today-date">
+          <div class="event-day"><i class="fa-regular fa-folder-open"></i> <%= project.name %></div>
+          <div class="event-date"><%= project.description || '' %></div>
+        </div>
+
+        <div class="events">
+          <div class="tasks-section">
+            <h3 class="tasks-title"><i class="fas fa-tasks"></i> Tarefas do Projeto</h3>
+
+            <form action="/projetos/<%= project.id %>/tasks" method="POST" style="margin-bottom:16px; display:flex; gap:8px; flex-wrap:wrap;">
+              <input type="date" name="date" required>
+              <input type="text" name="title" placeholder="Título" required>
+              <input type="text" name="description" placeholder="Descrição">
+              <select name="priority" required>
+                <option value="baixa">Baixa</option>
+                <option value="media">Média</option>
+                <option value="alta">Alta</option>
+              </select>
+              <input type="time" name="time">
+              <button type="submit" class="today-btn">Adicionar tarefa</button>
+            </form>
+
+            <ul class="event-list">
+              <% if (tasks.length === 0) { %>
+                <li>Nenhuma tarefa neste projeto ainda.</li>
+              <% } %>
+              <% tasks.forEach(function(task){ %>
+                <li class="event <%= task.isCompleted ? 'completed' : '' %>">
+                  <div class="title">
+                    <i class="fa-regular fa-square-check"></i>
+                    <span><%= task.title %></span>
+                  </div>
+                  <div class="event-time">
+                    <%= task.date %> <%= task.time ? ('às ' + task.time) : '' %> — <%= task.description || '' %> — Prioridade: <%= task.priority %>
+                  </div>
+                  <div style="display:flex; gap:8px; margin-top:8px;">
+                    <button class="today-btn" type="button" onclick="toggleTask('<%= task.id %>', <%= !task.isCompleted %>)"><%= task.isCompleted ? 'Reabrir' : 'Concluir' %></button>
+                    <button class="today-btn" type="button" style="background:#c0392b" onclick="deleteTask('<%= task.id %>')">Excluir</button>
+                  </div>
+                </li>
+              <% }) %>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <script>
+    async function deleteTask(id){
+      if(!confirm('Deseja remover esta tarefa?')) return;
+      const res = await fetch(`/tasks/${id}`, { method: 'DELETE' });
+      if(res.ok){ location.reload(); } else { alert('Falha ao remover tarefa'); }
+    }
+    async function toggleTask(id, isCompleted){
+      const res = await fetch(`/tasks/${id}/toggle`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ isCompleted }) });
+      if(res.ok){ location.reload(); } else { alert('Falha ao atualizar tarefa'); }
+    }
+  </script>
+</body>
+</html>
+

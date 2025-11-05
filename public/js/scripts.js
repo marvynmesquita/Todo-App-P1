@@ -48,9 +48,11 @@ async function fetchHolidays(yearToFetch) {
 
 // Nova função para buscar tarefas do usuário
 async function fetchUserTasks(dateString) {
-    console.log('4. URL de requisição para buscar tarefas:', `/tasks/${dateString}`);
+    const pid = (typeof window !== 'undefined' && window.ACTIVE_PROJECT_ID) ? window.ACTIVE_PROJECT_ID : '';
+    const url = pid ? `/tasks/${dateString}?projectId=${encodeURIComponent(pid)}` : `/tasks/${dateString}`;
+    console.log('4. URL de requisição para buscar tarefas:', url);
     try {
-        const response = await fetch(`/tasks/${dateString}`);
+        const response = await fetch(url);
         if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
         }
@@ -264,7 +266,8 @@ function eventCreator() {
                         title: eventAppendTitle,
                         description: eventAppendDescription,
                         priority: eventAppendPriority,
-                        time: formattedTime
+                        time: formattedTime,
+                        projectId: (typeof window !== 'undefined' && window.ACTIVE_PROJECT_ID) ? window.ACTIVE_PROJECT_ID : null
                     })
                 });
                 if (response.ok) {

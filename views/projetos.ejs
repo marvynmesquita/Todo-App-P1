@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title><%= title || 'Projetos' %></title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.2.1/css/all.min.css" integrity="sha512-MV7K8+y+gLIBoVD59lQIYicR65iaqukzvf/nwasF0nqhPay5w/9lJmVM2hMDcnK1OnMGCdVK+iQrJ7lzPJQd1w==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <div class="user-info-bar">
+    <div class="user-info">
+      <i class="fas fa-user-circle"></i>
+      <span>Olá, <%= userName || 'Usuário' %>!</span>
+    </div>
+    <div class="user-actions">
+      <a href="/projetos" class="logout-btn" title="Início">
+        <i class="fas fa-home"></i>
+        Início
+      </a>
+      <a href="/logout" class="logout-btn" title="Sair">
+        <i class="fas fa-sign-out-alt"></i>
+        Sair
+      </a>
+    </div>
+  </div>
+
+  <section class="s-main">
+    <div class="container" style="gap: 24px; align-items: flex-start;">
+      <div class="right" style="width:100%">
+        <div class="today-date">
+          <div class="event-day">Projetos</div>
+        </div>
+
+        <div class="events">
+          <div class="tasks-section">
+            <h3 class="tasks-title"><i class="fa-solid fa-diagram-project"></i> Seus Projetos</h3>
+
+            <div style="display:flex; justify-content: space-between; align-items:center; margin-bottom: 16px;">
+              <div class="chip"><i class="fa-regular fa-folder"></i> <%= projects.length %> projetos</div>
+              <button type="button" class="btn-primary" onclick="openProjectModal()"><i class="fa-solid fa-plus"></i> Novo Projeto</button>
+            </div>
+
+            <div class="card-grid">
+              <% if (projects.length === 0) { %>
+                <div class="card">
+                  <div class="card-title"><i class="fa-regular fa-folder-open"></i> Sem projetos</div>
+                  <div class="card-sub">Clique em "Novo Projeto" para criar o primeiro.</div>
+                </div>
+              <% } %>
+              <% projects.forEach(function(project){ 
+                   const count = (tasks||[]).filter(t => t.projectId === project.id).length;
+              %>
+                <div class="card">
+                  <div class="card-title">
+                    <i class="fa-regular fa-folder-open"></i>
+                    <a href="/projetos/<%= project.id %>" style="color:inherit;"><%= project.name %></a>
+                  </div>
+                  <div class="card-sub"><%= project.description || 'Sem descrição' %></div>
+                  <div style="display:flex; gap:8px; align-items:center; margin-top:12px;">
+                    <span class="chip"><i class="fa-regular fa-square-check"></i> <%= count %> tarefas</span>
+                    <button class="btn-outline" onclick="editInline('<%= project.id %>')"><i class="fa-regular fa-pen-to-square"></i> Editar</button>
+                    <button class="btn-danger" onclick="deleteProject('<%= project.id %>')"><i class="fa-regular fa-trash-can"></i> Excluir</button>
+                  </div>
+                  <form id="edit-<%= project.id %>" action="/projetos/<%= project.id %>" method="POST" style="display:none; margin-top:10px; gap:8px;">
+                    <input class="input" type="text" name="name" value="<%= project.name %>" required>
+                    <input class="input" type="text" name="description" value="<%= project.description || '' %>">
+                    <div style="display:flex; gap:8px; justify-content:flex-end;">
+                      <button type="button" class="btn-outline" onclick="cancelEdit('<%= project.id %>')">Cancelar</button>
+                      <button type="submit" class="btn-primary">Salvar</button>
+                    </div>
+                  </form>
+                </div>
+              <% }) %>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <script>
+    function openProjectModal(){
+      document.getElementById('project-modal-overlay').style.display='flex';
+    }
+    function closeProjectModal(){
+      document.getElementById('project-modal-overlay').style.display='none';
+    }
+    function editInline(id){
+      const form = document.getElementById(`edit-${id}`);
+      form.style.display = form.style.display === 'none' ? 'flex' : 'none';
+    }
+    function cancelEdit(id){
+      const form = document.getElementById(`edit-${id}`);
+      form.style.display = 'none';
+    }
+    async function deleteProject(id){
+      if(!confirm('Deseja remover este projeto? Isso também removerá tarefas associadas.')) return;
+      const res = await fetch(`/projetos/${id}`, { method: 'DELETE' });
+      if(res.ok){ location.reload(); } else { alert('Falha ao remover projeto'); }
+    }
+  </script>
+
+  <!-- Modal Novo Projeto -->
+  <div id="project-modal-overlay" class="modal-overlay" onclick="if(event.target.id==='project-modal-overlay'){closeProjectModal()}">
+    <div class="modal">
+      <div class="modal-header">
+        <strong><i class="fa-solid fa-folder-plus"></i> Novo Projeto</strong>
+        <button onclick="closeProjectModal()" style="font-size:20px">✕</button>
+      </div>
+      <form action="/projetos" method="POST">
+        <div class="modal-body">
+          <input class="input" type="text" name="name" placeholder="Nome do projeto" required>
+          <input class="input" type="text" name="description" placeholder="Descrição (opcional)">
+        </div>
+        <div class="modal-actions">
+          <button type="button" class="btn-outline" onclick="closeProjectModal()">Cancelar</button>
+          <button type="submit" class="btn-primary">Criar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</body>
+</html>
+
+

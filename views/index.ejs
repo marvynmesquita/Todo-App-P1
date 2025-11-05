@@ -16,6 +16,16 @@
       <span>Olá, <%= userName || 'Usuário' %>!</span>
     </div>
     <div class="user-actions">
+      <a href="/projetos" class="logout-btn" title="Projetos">
+        <i class="fa-solid fa-diagram-project"></i>
+        Projetos
+      </a>
+      <% if (typeof activeProjectId !== 'undefined') { %>
+      <a href="/" class="logout-btn" title="Limpar filtro">
+        <i class="fa-solid fa-filter-circle-xmark"></i>
+        Limpar filtro
+      </a>
+      <% } %>
       <a href="/logout" class="logout-btn" title="Sair">
         <i class="fas fa-sign-out-alt"></i>
         Sair
@@ -54,7 +64,7 @@
       </div>
       <div class="right">
         <div class="today-date">
-          <div class="event-day"></div>
+          <div class="event-day"><% if (typeof activeProjectName !== 'undefined') { %>Projeto: <%= activeProjectName %><% } %></div>
           <div class="event-date"></div>
         </div>
         <div class="events">
@@ -84,5 +94,9 @@
   </section>
   
   <script src="/js/scripts.js"></script>
+  <script>
+    // propaga projectId para buscas de tarefas (scripts.js deve anexar este param se presente)
+    window.ACTIVE_PROJECT_ID = '<%= typeof activeProjectId !== 'undefined' ? activeProjectId : '' %>';
+  </script>
 </body>
 </html>

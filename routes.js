@@ -68,6 +68,7 @@ module.exports = (db) => {
     router.get('/tasks/:date', async (req, res) => {
         try {
             const { date } = req.params;
+            const { projectId } = req.query;
             const usersCollection = db.collection('users');
             const user = await usersCollection.findOne({ _id: new ObjectId(req.session.userId) });
             if (!user) {
@@ -75,9 +76,9 @@ module.exports = (db) => {
             }
             
             // Encontra as tarefas para a data específica comparando as strings de data
-            const tasksForDate = user.tasks.filter(task => {
-                return task.date === date;
-            });
+            const tasksForDate = user.tasks
+                .filter(task => task.date === date)
+                .filter(task => projectId ? task.projectId === projectId : true);
 
             res.json(tasksForDate);
         } catch (error) {
@@ -86,10 +87,10 @@ module.exports = (db) => {
         }
     });
 
-    // Nova rota para adicionar uma tarefa
+    // Nova rota para adicionar uma tarefa (suporta projectId opcional)
     router.post('/tasks', async (req, res) => {
         try {
-            const { date, title, description, priority, time } = req.body;
+            const { date, title, description, priority, time, projectId } = req.body;
             const newTask = {
                 id: Date.now().toString(),
                 date: date,
@@ -97,7 +98,8 @@ module.exports = (db) => {
                 description: description,
                 priority: priority,
                 time: time,
-                isCompleted: false
+                isCompleted: false,
+                projectId: projectId || null
             };
 
             const usersCollection = db.collection('users');
@@ -221,6 +223,176 @@ module.exports = (db) => {
         } catch (error) {
             console.error('Erro ao buscar estatísticas:', error);
             res.status(500).json({ error: 'Erro ao buscar estatísticas.' });
+        }
+    });
+
+    // =========================
+    // CRUD de Projetos
+    // =========================
+
+    // Listagem de projetos
+    router.get('/projetos', async (req, res) => {
+        try {
+            const usersCollection = db.collection('users');
+            const user = await usersCollection.findOne({ _id: new ObjectId(req.session.userId) });
+            const projects = user?.projects || [];
+            const tasks = user?.tasks || [];
+
+            res.render('projetos', {
+                title: 'Projetos',
+                userName: req.session.userName,
+                projects,
+                tasks
+            });
+        } catch (error) {
+            console.error('Erro ao listar projetos:', error);
+            res.status(500).send('Erro ao listar projetos');
+        }
+    });
+
+    // Criar projeto
+    router.post('/projetos', async (req, res) => {
+        try {
+            const { name, description } = req.body;
+            if (!name || name.trim().length === 0) {
+                return res.status(400).send('Nome do projeto é obrigatório');
+            }
+
+            const project = {
+                id: new ObjectId().toHexString(),
+                name: name.trim(),
+                description: (description || '').trim(),
+                createdAt: new Date()
+            };
+
+            const usersCollection = db.collection('users');
+            await usersCollection.updateOne(
+                { _id: new ObjectId(req.session.userId) },
+                { $push: { projects: project } }
+            );
+
+            res.redirect('/projetos');
+        } catch (error) {
+            console.error('Erro ao criar projeto:', error);
+            res.status(500).send('Erro ao criar projeto');
+        }
+    });
+
+    // Atualizar projeto
+    router.post('/projetos/:id', async (req, res) => {
+        try {
+            const { id } = req.params;
+            const { name, description } = req.body;
+
+            const usersCollection = db.collection('users');
+            await usersCollection.updateOne(
+                { _id: new ObjectId(req.session.userId), "projects.id": id },
+                { $set: { "projects.$.name": name, "projects.$.description": description } }
+            );
+
+            res.redirect('/projetos');
+        } catch (error) {
+            console.error('Erro ao atualizar projeto:', error);
+            res.status(500).send('Erro ao atualizar projeto');
+        }
+    });
+
+    // Deletar projeto (e tarefas associadas)
+    router.delete('/projetos/:id', async (req, res) => {
+        try {
+            const { id } = req.params;
+            const usersCollection = db.collection('users');
+
+            await usersCollection.updateOne(
+                { _id: new ObjectId(req.session.userId) },
+                { $pull: { projects: { id: id }, tasks: { projectId: id } } }
+            );
+
+            res.status(200).json({ message: 'Projeto removido com sucesso.' });
+        } catch (error) {
+            console.error('Erro ao remover projeto:', error);
+            res.status(500).json({ error: 'Erro ao remover projeto.' });
+        }
+    });
+
+    // Detalhes do projeto reutilizando a página com calendário (filtrado por projeto)
+    router.get('/projetos/:id', async (req, res) => {
+        try {
+            const { id } = req.params;
+            const usersCollection = db.collection('users');
+            const user = await usersCollection.findOne({ _id: new ObjectId(req.session.userId) });
+            if (!user) return res.status(404).send('Usuário não encontrado');
+
+            const project = (user.projects || []).find(p => p.id === id);
+            if (!project) return res.status(404).send('Projeto não encontrado');
+
+            const now = new Date();
+            const currentYear = now.getFullYear();
+            const currentMonth = now.toLocaleString('pt-BR', { month: 'long', year: 'numeric' });
+            const eventDay = now.toLocaleDateString('pt-BR', { weekday: 'long' });
+            const eventDate = now.toLocaleDateString('pt-BR');
+
+            const holidays = await holidaysService.getHolidays(currentYear);
+            const days = generateCalendarDays(now, holidays);
+
+            const userTasks = (user.tasks || []).filter(t => t.projectId === id);
+            const totalTasks = userTasks.length;
+            const completedTasks = userTasks.filter(t => t.isCompleted).length;
+            const pendingTasks = totalTasks - completedTasks;
+            const completionPercentage = totalTasks > 0 ? (completedTasks / totalTasks) * 100 : 0;
+
+            res.render('index', {
+                title: `Projeto: ${project.name}`,
+                userName: req.session.userName,
+                userEmail: req.session.userEmail,
+                currentMonth,
+                days: days,
+                eventDay,
+                eventDate,
+                events: userTasks,
+                holidays: holidays,
+                stats: {
+                    totalTasks,
+                    completedTasks,
+                    pendingTasks,
+                    completionPercentage: completionPercentage.toFixed(2)
+                },
+                activeProjectId: id,
+                activeProjectName: project.name
+            });
+        } catch (error) {
+            console.error('Erro ao carregar projeto:', error);
+            res.status(500).send('Erro ao carregar projeto');
+        }
+    });
+
+    // Criar tarefa dentro de um projeto específico
+    router.post('/projetos/:id/tasks', async (req, res) => {
+        try {
+            const { id } = req.params;
+            const { date, title, description, priority, time } = req.body;
+
+            const newTask = {
+                id: Date.now().toString(),
+                date,
+                title,
+                description,
+                priority,
+                time,
+                isCompleted: false,
+                projectId: id
+            };
+
+            const usersCollection = db.collection('users');
+            await usersCollection.updateOne(
+                { _id: new ObjectId(req.session.userId) },
+                { $push: { tasks: newTask } }
+            );
+
+            res.redirect(`/projetos/${id}`);
+        } catch (error) {
+            console.error('Erro ao adicionar tarefa ao projeto:', error);
+            res.status(500).send('Erro ao adicionar tarefa');
         }
     });
 

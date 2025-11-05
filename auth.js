@@ -20,7 +20,7 @@ module.exports = (db) => {
     // Middleware para verificar se o usuário já está logado
     const redirectIfLoggedIn = (req, res, next) => {
         if (req.session && req.session.userId) {
-            return res.redirect('/');
+            return res.redirect('/projetos');
         }
         return next();
     };
@@ -62,7 +62,7 @@ module.exports = (db) => {
             req.session.userEmail = user.email;
 
             req.flash('success', `Bem-vindo, ${user.name}!`);
-            res.redirect('/');
+            res.redirect('/projetos');
 
         } catch (error) {
             console.error('Erro no login:', error);
@@ -120,7 +120,8 @@ module.exports = (db) => {
                 email: email.toLowerCase().trim(),
                 password: hashedPassword,
                 createdAt: new Date(),
-                tasks: [] // Inicializa um array de tarefas para o usuário
+                tasks: [], // Inicializa um array de tarefas para o usuário
+                projects: [] // Inicializa um array de projetos para o usuário
             };
 
             await usersCollection.insertOne(newUser);
