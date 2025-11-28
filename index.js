@@ -13,6 +13,7 @@ const express = require('express');
 const cors = require('cors');
 const session = require('express-session');
 const flash = require('connect-flash');
+const mongoose = require('mongoose');
 
 // Configuração do servidor
 const app = express();
@@ -47,6 +48,12 @@ async function run() {
     await client.db("admin").command({ ping: 1 });
     db = client.db('todo-app');
     
+    // Conectar Mongoose usando a mesma URI
+    await mongoose.connect(uri, {
+      dbName: 'todo-app'
+    });
+    console.log('✅ Mongoose conectado com sucesso!');
+    
     // Middleware para arquivos estáticos
     app.use(express.static(path.join(__dirname, 'public'), {
         maxAge: NODE_ENV === 'production' ? '1d' : 0,
@@ -60,6 +67,10 @@ async function run() {
     // Rotas principais (protegidas)
     const router = require('./routes')(db);
     app.use('/', requireAuth, router);
+    
+    // Rotas de teste para o modelo Tarefa (Mongoose)
+    const tarefaRoutes = require('./routes/tarefaRoutes');
+    app.use('/', tarefaRoutes);
     
     // Iniciar o servidor Express somente após a conexão com o banco de dados
     app.listen(PORT, () => {

@@ -1,6 +1,53 @@
 # 📅 Todo App - Sistema de Autenticação
 
+> **🎓 PROVA P1 - Sistema de Rastreamento de Histórico Implementado!**  
+> Todas as 5 tarefas da prova foram concluídas com sucesso. Veja [INSTRUCOES_PROVA.md](INSTRUCOES_PROVA.md) para detalhes.
+
 Um aplicativo de agenda e tarefas com sistema completo de autenticação, desenvolvido com Node.js, Express e EJS.
+
+## 🎯 Prova P1 - Sistema de Histórico de Tarefas
+
+### ✅ Status: COMPLETO (10/10 pontos)
+
+Foi implementado um sistema completo de rastreamento de histórico para o modelo `Tarefa` usando Mongoose:
+
+- ✅ **Tarefa 1**: Campo `historico` e método `adicionarAoHistorico()`
+- ✅ **Tarefa 2**: Middleware `pre('save')` para registro automático
+- ✅ **Tarefa 3**: Método estático `buscarTarefasComHistorico()`
+- ✅ **Tarefa 4**: Método `obterHistoricoPorCampo()`
+- ✅ **Tarefa 5**: Virtual `ultimaAlteracao`
+
+### 📚 Documentação da Prova:
+- **[INSTRUCOES_PROVA.md](INSTRUCOES_PROVA.md)** - Instruções completas e checklist
+- **[TAREFA_HISTORICO.md](TAREFA_HISTORICO.md)** - Documentação técnica detalhada
+- **[QUICK_REFERENCE.md](QUICK_REFERENCE.md)** - Referência rápida
+- **[MONGODB_SETUP.md](MONGODB_SETUP.md)** - Guia de configuração do MongoDB
+
+### 🚀 Como Testar a Prova:
+
+1. **Configure o MongoDB** (veja [MONGODB_SETUP.md](MONGODB_SETUP.md)):
+   ```bash
+   # Edite o arquivo .env e adicione sua connection string
+   DB_URI=mongodb+srv://seu-usuario:sua-senha@cluster.mongodb.net/todo-app
+   ```
+
+2. **Inicie o servidor**:
+   ```bash
+   npm start
+   ```
+
+3. **Execute os testes**:
+   ```bash
+   node test-tarefa.js
+   ```
+
+4. **Teste as rotas da API**:
+   - `POST /api/tarefas` - Criar tarefa
+   - `PUT /api/tarefas/:id` - Atualizar (testa middleware)
+   - `GET /api/tarefas/com-historico` - Buscar com histórico
+   - `GET /api/tarefas/:id/historico/:campo` - Histórico por campo
+
+---
 
 ## ✨ Funcionalidades
 
